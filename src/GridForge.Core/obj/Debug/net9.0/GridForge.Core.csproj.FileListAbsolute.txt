@@ -20,3 +20,4 @@ D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Debug\net9.0\refint\GridForge
 D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Debug\net9.0\GridForge.Core.pdb
 D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Debug\net9.0\GridForge.Core.genruntimeconfig.cache
 D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Debug\net9.0\ref\GridForge.Core.dll
+D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Debug\net9.0\GridForge.Core.sourcelink.json

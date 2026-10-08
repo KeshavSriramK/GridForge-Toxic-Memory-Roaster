@@ -1,0 +1,13 @@
+D:\Projects\GridForgeEngine\src\GridForge.Core\bin\Release\net8.0\GridForge.Core.deps.json
+D:\Projects\GridForgeEngine\src\GridForge.Core\bin\Release\net8.0\GridForge.Core.dll
+D:\Projects\GridForgeEngine\src\GridForge.Core\bin\Release\net8.0\GridForge.Core.pdb
+D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Release\net8.0\GridForge.Core.csproj.AssemblyReference.cache
+D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Release\net8.0\GridForge.Core.GeneratedMSBuildEditorConfig.editorconfig
+D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Release\net8.0\GridForge.Core.AssemblyInfoInputs.cache
+D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Release\net8.0\GridForge.Core.AssemblyInfo.cs
+D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Release\net8.0\GridForge.Core.csproj.CoreCompileInputs.cache
+D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Release\net8.0\GridForge.Core.sourcelink.json
+D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Release\net8.0\GridForge.Core.dll
+D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Release\net8.0\refint\GridForge.Core.dll
+D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Release\net8.0\GridForge.Core.pdb
+D:\Projects\GridForgeEngine\src\GridForge.Core\obj\Release\net8.0\ref\GridForge.Core.dll

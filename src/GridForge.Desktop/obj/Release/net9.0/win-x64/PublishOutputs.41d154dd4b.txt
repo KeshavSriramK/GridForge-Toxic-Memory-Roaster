@@ -1,0 +1,3 @@
+D:\Projects\GridForgeEngine\src\GridForge.Desktop\bin\Release\net9.0\win-x64\publish\GridForge.Desktop.pdb
+D:\Projects\GridForgeEngine\src\GridForge.Desktop\bin\Release\net9.0\win-x64\publish\GridForge.Core.pdb
+D:\Projects\GridForgeEngine\src\GridForge.Desktop\bin\Release\net9.0\win-x64\publish\GridForge.Desktop.exe

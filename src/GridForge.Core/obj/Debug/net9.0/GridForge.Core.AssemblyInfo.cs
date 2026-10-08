@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GridForge.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+118885cd9f4dc387f2c75c654fc9de5207ba0883")]
 [assembly: System.Reflection.AssemblyProductAttribute("GridForge.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GridForge.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
