@@ -44,3 +44,9 @@ jobs:
 
       - name: Publish Android App
         run: dotnet publish src/GridForge.Android/GridForge.Android.csproj -c Release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GridForge-Android-APK
+          path: src/GridForge.Android/bin/Release/net8.0-android/publish/*.apk
