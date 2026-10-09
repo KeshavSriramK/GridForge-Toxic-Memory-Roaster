@@ -39,5 +39,8 @@ jobs:
       - name: Install Android Workload
         run: dotnet workload install android
 
+      - name: Restore dependencies
+        run: dotnet restore src/GridForge.Android/GridForge.Android.csproj /p:CheckEolTargetFramework=false
+
       - name: Publish Android App
-        run: dotnet publish src/GridForge.Android/GridForge.Android.csproj -c Release
+        run: dotnet publish src/GridForge.Android/GridForge.Android.csproj -c Release /p:CheckEolTargetFramework=false
