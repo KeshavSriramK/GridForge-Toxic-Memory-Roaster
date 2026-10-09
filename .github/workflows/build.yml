@@ -40,4 +40,4 @@ jobs:
         run: dotnet workload install android
 
       - name: Publish Android App
-        run: dotnet publish src/GridForge.Android/GridForge.Android.csproj -c Release -f net8.0-android
+        run: dotnet publish src/GridForge.Android/GridForge.Android.csproj -c Release -f net8.0-android /p:TargetPlatformIdentifier=android
