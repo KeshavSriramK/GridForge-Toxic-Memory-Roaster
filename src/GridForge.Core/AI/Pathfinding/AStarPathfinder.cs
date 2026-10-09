@@ -60,12 +60,12 @@ namespace GridForge.Core.AI.Pathfinding
             return new List<PathNode>();
         }
 
-        private List<PathNode> ReconstructPath(PathNode startNode, PathNode endNode)
+       private List<PathNode> ReconstructPath(PathNode startNode, PathNode endNode)
         {
             List<PathNode> path = new();
-            PathNode current = endNode;
+            PathNode? current = endNode;
 
-            while (current != startNode)
+            while (current != null && current != startNode)
             {
                 path.Add(current);
                 current = current.Parent;

@@ -505,10 +505,11 @@ public class MemoryRoasterView : SurfaceView, ISurfaceHolderCallback
     }
 }
 
-public class RoasterThread : Thread
+public class RoasterThread
 {
     private readonly ISurfaceHolder _holder;
     private readonly MemoryRoasterView _view;
+    private Thread? _thread;
     public bool Running { get; set; }
 
     public RoasterThread(ISurfaceHolder holder, MemoryRoasterView view)
@@ -517,7 +518,19 @@ public class RoasterThread : Thread
         _view = view;
     }
 
-    public override void Run()
+    public void Start()
+    {
+        Running = true;
+        _thread = new Thread(RunLoop);
+        _thread.Start();
+    }
+
+    public void Join()
+    {
+        _thread?.Join();
+    }
+
+    private void RunLoop()
     {
         long lastTime = SystemClock.ElapsedRealtime();
 
