@@ -1,4 +1,31 @@
-build-android:
+name: Build Cross-Platform Game Engine
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-desktop:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore GridForgeEngine.sln
+
+      - name: Build Desktop
+        run: dotnet build src/GridForge.Desktop/GridForge.Desktop.csproj -c Release
+
+  build-android:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
