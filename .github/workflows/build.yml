@@ -39,10 +39,16 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Install Android Workload
-      run: dotnet workload install android --configfile nuget.config
+      run: dotnet workload install android
 
     - name: Restore dependencies
       run: dotnet restore src/GridForge.Android/GridForge.Android.csproj -p:CheckEolTargetFramework=false
 
     - name: Publish Android App
       run: dotnet publish src/GridForge.Android/GridForge.Android.csproj -c Release -p:CheckEolTargetFramework=false
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: GridForge-Android-APK
+        path: src/GridForge.Android/bin/Release/net8.0-android/publish/*.apk
