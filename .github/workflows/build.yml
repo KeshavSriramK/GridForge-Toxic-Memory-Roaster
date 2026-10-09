@@ -1,11 +1,14 @@
-name: Build Desktop Game
+name: Build Cross-Platform Game Engine
 
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build:
+  # 1. WINDOWS DESKTOP BUILD
+  build-desktop:
     runs-on: windows-latest
 
     steps:
@@ -19,8 +22,50 @@ jobs:
     - name: Publish Desktop App
       run: dotnet publish src/GridForge.Desktop/GridForge.Desktop.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
 
-    - name: Upload Artifacts
+    - name: Upload Windows Artifact
       uses: actions/upload-artifact@v4
       with:
         name: Windows-Game-Executable
         path: src/GridForge.Desktop/bin/Release/net8.0/win-x64/publish/
+
+  # 2. ANDROID APK BUILD
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Install Android Workload
+      run: dotnet workload install android
+
+    - name: Publish Android APK
+      run: dotnet publish src/GridForge.Android/GridForge.Android.csproj -c Release -r android-arm64 -p:AndroidPackageFormat=apk
+
+    - name: Upload Android APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Android-Game-APK
+        path: src/GridForge.Android/bin/Release/net8.0-android/*/*-Signed.apk
+
+  # 3. IOS BUILD
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Install iOS Workload
+      run: dotnet workload install ios
+
+    - name: Build iOS Project
+      run: dotnet build src/GridForge.iOS/GridForge.iOS.csproj -c Release
