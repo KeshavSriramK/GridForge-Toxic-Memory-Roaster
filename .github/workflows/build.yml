@@ -40,7 +40,7 @@ jobs:
         run: dotnet workload install android
 
       - name: Restore dependencies
-        run: dotnet restore src/GridForge.Android/GridForge.Android.csproj /p:TargetFramework=net8.0-android /p:CheckEolTargetFramework=false
+        run: dotnet restore src/GridForge.Android/GridForge.Android.csproj
 
       - name: Build Android App
-        run: dotnet build src/GridForge.Android/GridForge.Android.csproj -c Release -f net8.0-android /p:CheckEolTargetFramework=false
+        run: dotnet publish src/GridForge.Android/GridForge.Android.csproj -c Release -f net8.0-android
