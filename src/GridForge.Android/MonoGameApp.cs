@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Input.Touch;
 using GridForge.Core.AI.Pathfinding;
 
@@ -16,19 +15,23 @@ public class MonoGameApp : Game
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch = null!;
     private Texture2D _pixel = null!;
-    private SpriteFont? _font;
 
-    private const int VirtualWidth = 800;
-    private const int VirtualHeight = 700;
+    private const int TargetWidth = 800;
+    private const int TargetHeight = 700;
     private const int GridSize = 20;
-    private const int CellSize = 25;
-    private const int OffsetX = 150;
-    private const int OffsetY = 40;
+    private const int CellSize = 25; // 20 * 25 = 500px grid
 
-    private GameState _currentState = GameState.NameInput;
+    // Centered positions inside 800x700 virtual space
+    private const int GridOffsetX = 150; 
+    private const int GridOffsetY = 100;
+
+    private float _scale = 1f;
+    private Vector2 _screenOffset = Vector2.Zero;
+
+    private GameState _currentState = GameState.MainMenu;
     private GameMode _currentMode = GameMode.None;
 
-    private string _userName = "Genius";
+    private string _userName = "GENIUS";
     private int _currentLevel = 1;
     private int _currentGame = 1;
     private int _maxLevels = 5;
@@ -48,18 +51,20 @@ public class MonoGameApp : Game
 
     private readonly Random _random = new();
 
-    // UI Rectangles
-    private Rectangle _btnEasy = new(150, 260, 500, 65);
-    private Rectangle _btnNormal = new(150, 345, 500, 65);
-    private Rectangle _btnHard = new(150, 430, 500, 65);
-    private Rectangle _confirmNameBtn = new(250, 400, 300, 50);
-    private Rectangle _startTutorialBtn = new(200, 580, 400, 55);
-    private Rectangle _startPlayingButton = new(200, 625, 400, 45);
-    private Rectangle _checkButton = new(140, 620, 150, 40);
-    private Rectangle _resetButton = new(325, 620, 150, 40);
-    private Rectangle _menuButton = new(510, 620, 150, 40);
-    private Rectangle _nextGameButton = new(150, 400, 500, 50);
-    private Rectangle _victoryMenuButton = new(150, 470, 500, 50);
+    // Virtual UI Rectangles (Centered Layout)
+    private readonly Rectangle _btnEasy = new(200, 220, 400, 60);
+    private readonly Rectangle _btnNormal = new(200, 310, 400, 60);
+    private readonly Rectangle _btnHard = new(200, 400, 400, 60);
+
+    private readonly Rectangle _startTutorialBtn = new(200, 580, 400, 55);
+    private readonly Rectangle _startPlayingButton = new(200, 620, 400, 50);
+
+    private readonly Rectangle _checkButton = new(150, 620, 140, 50);
+    private readonly Rectangle _resetButton = new(330, 620, 140, 50);
+    private readonly Rectangle _menuButton = new(510, 620, 140, 50);
+
+    private readonly Rectangle _nextGameButton = new(200, 450, 400, 55);
+    private readonly Rectangle _victoryMenuButton = new(200, 520, 400, 55);
 
     public MonoGameApp()
     {
@@ -80,7 +85,30 @@ public class MonoGameApp : Game
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
 
+        CalculateScaleAndOffset();
+
         base.Initialize();
+    }
+
+    private void CalculateScaleAndOffset()
+    {
+        float screenW = GraphicsDevice.Viewport.Width;
+        float screenH = GraphicsDevice.Viewport.Height;
+
+        float scaleX = screenW / TargetWidth;
+        float scaleY = screenH / TargetHeight;
+
+        _scale = Math.Min(scaleX, scaleY);
+
+        float vpWidth = TargetWidth * _scale;
+        float vpHeight = TargetHeight * _scale;
+
+        _screenOffset = new Vector2((screenW - vpWidth) * 0.5f, (screenH - vpHeight) * 0.5f);
+    }
+
+    private Vector2 ScreenToVirtual(Vector2 screenPos)
+    {
+        return (screenPos - _screenOffset) / _scale;
     }
 
     private void StartMode(GameMode mode)
@@ -173,51 +201,52 @@ public class MonoGameApp : Game
         if (touchState.Count > 0)
         {
             var touch = touchState[0];
-            Vector2 pos = touch.Position;
+            Vector2 virtualPos = ScreenToVirtual(touch.Position);
+            Point posPoint = new((int)virtualPos.X, (int)virtualPos.Y);
 
             if (touch.State == TouchLocationState.Pressed)
             {
-                if (_currentState == GameState.NameInput)
+                if (_currentState == GameState.MainMenu)
                 {
-                    _currentState = GameState.MainMenu;
+                    if (_btnEasy.Contains(posPoint)) StartMode(GameMode.Easy);
+                    else if (_btnNormal.Contains(posPoint)) StartMode(GameMode.Normal);
+                    else if (_btnHard.Contains(posPoint)) StartMode(GameMode.Hard);
                 }
-                else if (_currentState == GameState.MainMenu)
-                {
-                    if (_btnEasy.Contains(pos)) StartMode(GameMode.Easy);
-                    else if (_btnNormal.Contains(pos)) StartMode(GameMode.Normal);
-                    else if (_btnHard.Contains(pos)) StartMode(GameMode.Hard);
-                }
-                else if (_currentState == GameState.Tutorial && _startTutorialBtn.Contains(pos))
+                else if (_currentState == GameState.Tutorial && _startTutorialBtn.Contains(posPoint))
                 {
                     LoadGameStage(_currentLevel, _currentGame);
                 }
-                else if (_currentState == GameState.Memorizing && _startPlayingButton.Contains(pos))
+                else if (_currentState == GameState.Memorizing && _startPlayingButton.Contains(posPoint))
                 {
                     _currentState = GameState.Playing;
                 }
                 else if (_currentState == GameState.Playing)
                 {
-                    if (_checkButton.Contains(pos))
+                    if (_checkButton.Contains(posPoint))
                     {
                         if (ValidateExactUserPath()) _currentState = GameState.Victory;
-                        else { _statusMessage = "WRONG PATH! TRY AGAIN!"; _statusMessageTimer = 3.0f; }
+                        else { _statusMessage = "WRONG PATH! ROASTED!"; _statusMessageTimer = 3.0f; }
                     }
-                    else if (_resetButton.Contains(pos)) _userDrawnPath.Clear();
-                    else if (_menuButton.Contains(pos)) _currentState = GameState.MainMenu;
+                    else if (_resetButton.Contains(posPoint)) _userDrawnPath.Clear();
+                    else if (_menuButton.Contains(posPoint)) _currentState = GameState.MainMenu;
                 }
-                else if ((_currentState == GameState.Victory || _currentState == GameState.GameOver) && _nextGameButton.Contains(pos))
+                else if ((_currentState == GameState.Victory || _currentState == GameState.GameOver) && _nextGameButton.Contains(posPoint))
                 {
                     int nextGame = _currentGame + 1;
                     int nextLevel = _currentLevel;
                     if (nextGame > GamesPerLevel) { nextGame = 1; nextLevel++; if (nextLevel > _maxLevels) nextLevel = 1; }
                     LoadGameStage(nextLevel, nextGame);
                 }
+                else if ((_currentState == GameState.Victory || _currentState == GameState.GameOver) && _victoryMenuButton.Contains(posPoint))
+                {
+                    _currentState = GameState.MainMenu;
+                }
             }
 
             if (_currentState == GameState.Playing && (touch.State == TouchLocationState.Pressed || touch.State == TouchLocationState.Moved))
             {
-                int gx = (int)((pos.X - OffsetX) / CellSize);
-                int gy = (int)((pos.Y - OffsetY) / CellSize);
+                int gx = (int)((virtualPos.X - GridOffsetX) / CellSize);
+                int gy = (int)((virtualPos.Y - GridOffsetY) / CellSize);
                 if (gx >= 0 && gx < GridSize && gy >= 0 && gy < GridSize)
                 {
                     if (_grid[gx, gy].IsWalkable && !((gx == 2 && gy == 10) || (gx == 18 && gy == 10)))
@@ -231,65 +260,95 @@ public class MonoGameApp : Game
 
     protected override void Draw(GameTime gameTime)
     {
-        GraphicsDevice.Clear(new Color(15, 23, 42));
+        GraphicsDevice.Clear(Color.Black);
 
-        _spriteBatch.Begin();
+        // Transform Matrix for automatic screen centering & scaling on any device
+        Matrix transform = Matrix.CreateScale(_scale) * Matrix.CreateTranslation(_screenOffset.X, _screenOffset.Y, 0);
 
-        if (_currentState == GameState.Memorizing || _currentState == GameState.Playing)
+        _spriteBatch.Begin(transformMatrix: transform);
+
+        // Virtual Canvas Background
+        _spriteBatch.Draw(_pixel, new Rectangle(0, 0, TargetWidth, TargetHeight), new Color(15, 23, 42));
+
+        if (_currentState == GameState.MainMenu)
         {
-            // Grid Rendering
+            DrawHeader("MEMORY ROASTER 3000", new Color(56, 189, 248));
+            DrawButton(_btnEasy, Color.Green, "EASY MODE");
+            DrawButton(_btnNormal, Color.Gold, "NORMAL MODE");
+            DrawButton(_btnHard, Color.Crimson, "HARD MODE");
+        }
+        else if (_currentState == GameState.Tutorial)
+        {
+            DrawHeader("HOW TO PLAY", new Color(56, 189, 248));
+            DrawButton(_startTutorialBtn, Color.DarkGreen, "START GAME");
+        }
+        else if (_currentState == GameState.Memorizing || _currentState == GameState.Playing)
+        {
+            // Timer Bar
+            if (_currentState == GameState.Playing)
+            {
+                float pct = _timeRemaining / _maxTimeForLevel;
+                Color timerCol = pct > 0.4f ? Color.LimeGreen : Color.Red;
+                _spriteBatch.Draw(_pixel, new Rectangle(GridOffsetX, 40, (int)(500 * pct), 15), timerCol);
+            }
+
+            // Grid Rendering (Centered)
             for (int x = 0; x < GridSize; x++)
             {
                 for (int y = 0; y < GridSize; y++)
                 {
                     var node = _grid[x, y];
-                    Color col = node.IsWalkable ? Color.LightGray : Color.DarkGray;
+                    Color cellColor = node.IsWalkable ? new Color(226, 232, 240) : new Color(71, 85, 105);
 
                     if (_currentState == GameState.Memorizing && _targetSolutionPath.Contains(node))
-                        col = Color.SkyBlue;
+                        cellColor = new Color(56, 189, 248); // Solution path
                     else if (_currentState == GameState.Playing && _userDrawnPath.Contains((x, y)))
-                        col = Color.SkyBlue;
+                        cellColor = new Color(56, 189, 248); // Player path
 
-                    _spriteBatch.Draw(_pixel, new Rectangle(OffsetX + x * CellSize, OffsetY + y * CellSize, CellSize - 2, CellSize - 2), col);
+                    _spriteBatch.Draw(_pixel, new Rectangle(GridOffsetX + x * CellSize, GridOffsetY + y * CellSize, CellSize - 2, CellSize - 2), cellColor);
                 }
             }
 
-            // Start & End Cells
-            _spriteBatch.Draw(_pixel, new Rectangle(OffsetX + 2 * CellSize, OffsetY + 10 * CellSize, CellSize - 2, CellSize - 2), Color.Green);
-            _spriteBatch.Draw(_pixel, new Rectangle(OffsetX + 18 * CellSize, OffsetY + 10 * CellSize, CellSize - 2, CellSize - 2), Color.Red);
+            // Start (Green) & End (Red)
+            _spriteBatch.Draw(_pixel, new Rectangle(GridOffsetX + 2 * CellSize, GridOffsetY + 10 * CellSize, CellSize - 2, CellSize - 2), Color.LimeGreen);
+            _spriteBatch.Draw(_pixel, new Rectangle(GridOffsetX + 18 * CellSize, GridOffsetY + 10 * CellSize, CellSize - 2, CellSize - 2), Color.Red);
 
-            // Buttons
+            // Action Buttons
             if (_currentState == GameState.Memorizing)
-                _spriteBatch.Draw(_pixel, _startPlayingButton, Color.DarkGreen);
+            {
+                DrawButton(_startPlayingButton, Color.DarkGreen, "START DRAWING");
+            }
             else
             {
-                _spriteBatch.Draw(_pixel, _checkButton, Color.DarkGreen);
-                _spriteBatch.Draw(_pixel, _resetButton, Color.DarkBlue);
-                _spriteBatch.Draw(_pixel, _menuButton, Color.Maroon);
+                DrawButton(_checkButton, Color.DarkGreen, "CHECK");
+                DrawButton(_resetButton, Color.DarkBlue, "RESET");
+                DrawButton(_menuButton, Color.Maroon, "MENU");
             }
-        }
-        else if (_currentState == GameState.MainMenu)
-        {
-            _spriteBatch.Draw(_pixel, _btnEasy, Color.Green);
-            _spriteBatch.Draw(_pixel, _btnNormal, Color.Gold);
-            _spriteBatch.Draw(_pixel, _btnHard, Color.Crimson);
-        }
-        else if (_currentState == GameState.NameInput)
-        {
-            _spriteBatch.Draw(_pixel, _confirmNameBtn, Color.LimeGreen);
-        }
-        else if (_currentState == GameState.Tutorial)
-        {
-            _spriteBatch.Draw(_pixel, _startTutorialBtn, Color.DarkGreen);
         }
         else if (_currentState == GameState.Victory || _currentState == GameState.GameOver)
         {
-            _spriteBatch.Draw(_pixel, _nextGameButton, Color.DarkBlue);
-            _spriteBatch.Draw(_pixel, _victoryMenuButton, Color.Maroon);
+            Color bannerCol = _currentState == GameState.Victory ? Color.LimeGreen : Color.Crimson;
+            string title = _currentState == GameState.Victory ? "LEVEL CLEARED!" : "SYSTEM OVERLOAD!";
+            DrawHeader(title, bannerCol);
+
+            DrawButton(_nextGameButton, Color.DarkBlue, "NEXT LEVEL");
+            DrawButton(_victoryMenuButton, Color.Maroon, "MAIN MENU");
         }
 
         _spriteBatch.End();
 
         base.Draw(gameTime);
+    }
+
+    private void DrawHeader(string title, Color color)
+    {
+        _spriteBatch.Draw(_pixel, new Rectangle(100, 50, 600, 80), color);
+    }
+
+    private void DrawButton(Rectangle rect, Color color, string label)
+    {
+        // Border + Fill
+        _spriteBatch.Draw(_pixel, new Rectangle(rect.X - 3, rect.Y - 3, rect.Width + 6, rect.Height + 6), Color.White);
+        _spriteBatch.Draw(_pixel, rect, color);
     }
 }
