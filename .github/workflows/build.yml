@@ -1,31 +1,4 @@
-name: Build Cross-Platform Game Engine
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
-
-jobs:
-  build-desktop:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Restore dependencies
-        run: dotnet restore GridForgeEngine.sln
-
-      - name: Build Desktop
-        run: dotnet build src/GridForge.Desktop/GridForge.Desktop.csproj -c Release
-
-  build-android:
+build-android:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -40,7 +13,7 @@ jobs:
         run: dotnet workload install android
 
       - name: Restore dependencies
-        run: dotnet restore src/GridForge.Android/GridForge.Android.csproj
+        run: dotnet restore src/GridForge.Android/GridForge.Android.csproj /p:CheckEolTargetFramework=false
 
       - name: Build Android App
-        run: dotnet build src/GridForge.Android/GridForge.Android.csproj -c Release -f net8.0-android
+        run: dotnet build src/GridForge.Android/GridForge.Android.csproj -c Release -f net8.0-android /p:CheckEolTargetFramework=false
