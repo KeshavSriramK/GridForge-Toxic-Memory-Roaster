@@ -1,4 +1,5 @@
 using Android.App;
+using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Views;
@@ -27,5 +28,40 @@ public class MainActivity : AndroidGameActivity
         var mainView = (View)_game.Services.GetService(typeof(View))!;
         SetContentView(mainView);
         _game.Run();
+    }
+
+    public override void OnBackPressed()
+    {
+        // Random sarcastic exit messages
+        string[] titles = {
+            "RAGE QUITTING ALREADY?",
+            "BRAIN OVERLOAD?",
+            "GIVING UP SO SOON?",
+            "EGO TOO FRAGILE?"
+        };
+
+        string[] messages = {
+            "Is your short-term memory failing you, or are you just scared of a 20x20 grid?",
+            "Your brain cells called. They need a break, but are you really going to let a puzzle beat you?",
+            "Running back to easier apps? We won't judge... much.",
+            "Are you sure you want to exit? Your path accuracy wasn't looking too hot anyway."
+        };
+
+        var random = new System.Random();
+        int index = random.Next(titles.Length);
+
+        new AlertDialog.Builder(this)
+            .SetTitle(titles[index])
+            .SetMessage(messages[index])
+            .SetPositiveButton("Flee Like A Coward", (sender, e) => 
+            {
+                Finish(); // Closes the app
+            })
+            .SetNegativeButton("Stay & Suffer More", (sender, e) => 
+            {
+                // Dismisses popup and keeps game active
+            })
+            .SetCancelable(true)
+            .Show();
     }
 }
