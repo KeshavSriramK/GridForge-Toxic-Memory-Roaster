@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Android">
+<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\GridForge.Core\GridForge.Core.csproj" />
   </ItemGroup>
