@@ -31,7 +31,7 @@ public class MonoGameApp : Game
     private GameState _currentState = GameState.NameInput;
     private GameMode _currentMode = GameMode.None;
 
-    private string _userName = "KESHAV";
+    private string _userName = ""; 
     private int _currentLevel = 1;
     private int _currentGame = 1;
     private int _maxLevels = 5;
@@ -55,6 +55,7 @@ public class MonoGameApp : Game
     private string _currentVictorySubtext = "";
     private string _currentGameOverTitle = "";
     private string _currentGameOverSubtext = "";
+    private string _currentPreGameRoast = "";
 
     private readonly Random _random = new();
 
@@ -67,7 +68,7 @@ public class MonoGameApp : Game
     }
     private readonly List<BgParticle> _particles = new();
 
-    private readonly Rectangle _nameConfirmBtn = new(200, 480, 400, 60);
+    private readonly Rectangle _nameConfirmBtn = new(200, 500, 400, 60);
     private readonly Rectangle _btnEasy = new(100, 200, 600, 65);
     private readonly Rectangle _btnNormal = new(100, 300, 600, 65);
     private readonly Rectangle _btnHard = new(100, 400, 600, 65);
@@ -139,6 +140,19 @@ public class MonoGameApp : Game
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
+        RollNewPreGameRoast();
+    }
+
+    private void RollNewPreGameRoast()
+    {
+        string[] roasts = {
+            "WARNING: YOUR SHORT TERM MEMORY IS ABOUT TO BE EXPOSED",
+            "PREPARE TO QUESTION EVERY LIFE CHOICE YOUVE MADE",
+            "EXCUSE ME, DO YOU EVEN HAVE WORKING BRAIN CELLS?",
+            "THIS GAME WILL PROVE YOUR DEGREE WAS A FLUKE",
+            "ENTER AT YOUR OWN RISK. IGNORANCE WONT SAVE YOU"
+        };
+        _currentPreGameRoast = roasts[_random.Next(roasts.Length)];
     }
 
     protected override void Initialize()
@@ -281,7 +295,7 @@ public class MonoGameApp : Game
         _currentState = GameState.GameOver;
     }
 
-    private string GetPlayerName() => string.IsNullOrWhiteSpace(_userName) ? "KESHAV" : _userName.ToUpper();
+    private string GetPlayerName() => string.IsNullOrWhiteSpace(_userName) ? "UNKNOWN VICTIM" : _userName.ToUpper();
 
     protected override void LoadContent()
     {
@@ -436,15 +450,18 @@ public class MonoGameApp : Game
 
         if (_currentState == GameState.NameInput)
         {
-            DrawCenteredPixelString("WHO IS DARING TO SUFFER?", 120, 3, Color.SkyBlue);
-            DrawCenteredPixelString("REGISTER YOUR EGO FOR PUBLIC JUDGMENT:", 180, 2, Color.White);
+            DrawCenteredPixelString("MEMORY ROASTER 3000", 70, 3, Color.SkyBlue);
+            DrawCenteredPixelString("WHO IS DARING TO SUFFER?", 130, 2, Color.Gold);
+            
+            DrawCenteredPixelString(_currentPreGameRoast, 200, 1, Color.Crimson);
+            DrawCenteredPixelString("REGISTER YOUR EGO FOR PUBLIC JUDGMENT BELOW", 240, 1, Color.White);
 
-            Rectangle box = new(200, 260, 400, 80);
+            Rectangle box = new(200, 300, 400, 80);
             _spriteBatch.Draw(_pixel, box, new Color(30, 41, 59));
             DrawHollowRect(box, 3, Color.Gold);
-            DrawCenteredPixelString($"PLAYER: {activePlayer}", 288, 3, Color.Gold);
+            DrawCenteredPixelString("CLICK TO ENTER YOUR NAME", 328, 2, Color.Gold);
 
-            DrawButton(_nameConfirmBtn, Color.Green, "REGISTER INEVITABLE FAILURE");
+            DrawButton(_nameConfirmBtn, Color.Green, "REGISTER INEVITABLE FAILURE", 2);
         }
         else if (_currentState == GameState.MainMenu)
         {
@@ -452,9 +469,9 @@ public class MonoGameApp : Game
             DrawCenteredPixelString($"TARGET PLAYER: {activePlayer}", 105, 2, Color.Gold);
             DrawCenteredPixelString("SELECT HOW FAST YOU WANT TO CRY:", 145, 2, Color.White);
 
-            DrawButton(_btnEasy, Color.Green, "EASY (FOR 3 BRAIN CELLS)");
-            DrawButton(_btnNormal, Color.Gold, "NORMAL (YOU WILL FAIL LEVEL 1)");
-            DrawButton(_btnHard, Color.Crimson, "HARD (DELETE APP & CRY TO SLEEP)");
+            DrawButton(_btnEasy, Color.Green, "EASY (FOR 3 BRAIN CELLS)", 2);
+            DrawButton(_btnNormal, Color.Gold, "NORMAL (YOU WILL FAIL LEVEL 1)", 2);
+            DrawButton(_btnHard, Color.Crimson, "HARD (DELETE APP & CRY TO SLEEP)", 2);
 
             DrawCenteredPixelString("GRIDFORGE OS v3.0 - NO MERCY EDITION", 645, 2, Color.DarkGray);
         }
@@ -474,7 +491,7 @@ public class MonoGameApp : Game
             for (int i = 0; i < steps.Length; i++)
                 DrawCenteredPixelString(steps[i], 180 + (i * 65), 2, Color.White);
 
-            DrawButton(_startTutorialBtn, Color.DarkGreen, "I DARE TO TRY (PROVE ME WRONG)");
+            DrawButton(_startTutorialBtn, Color.DarkGreen, "I DARE TO TRY (PROVE ME WRONG)", 2);
         }
         else if (_currentState == GameState.Memorizing || _currentState == GameState.Playing)
         {
@@ -511,14 +528,14 @@ public class MonoGameApp : Game
 
             if (_currentState == GameState.Memorizing)
             {
-                DrawButton(_startPlayingButton, Color.DarkGreen, "START DRAWING (HIDE SOLUTION)");
+                DrawButton(_startPlayingButton, Color.DarkGreen, "START DRAWING (HIDE SOLUTION)", 2);
             }
             else
             {
-                DrawButton(_checkButton, Color.DarkGreen, "CHECK WORK");
-                DrawButton(_resetButton, Color.DarkBlue, "WIPE SHAME");
-                DrawButton(_peekButton, Color.DarkGoldenrod, "PEEK (-5S)");
-                DrawButton(_menuButton, Color.Maroon, "GIVE UP");
+                DrawButton(_checkButton, Color.DarkGreen, "CHECK WORK", 2);
+                DrawButton(_resetButton, Color.DarkBlue, "WIPE SHAME", 2);
+                DrawButton(_peekButton, Color.DarkGoldenrod, "PEEK (-5S)", 2);
+                DrawButton(_menuButton, Color.Maroon, "GIVE UP", 2);
 
                 if (!string.IsNullOrEmpty(_statusMessage))
                     DrawCenteredPixelString(_statusMessage, 580, 2, Color.Red);
@@ -533,8 +550,8 @@ public class MonoGameApp : Game
             DrawCenteredPixelString(title, 140, 3, bannerCol);
             DrawCenteredPixelString(sub, 220, 2, Color.White);
 
-            DrawButton(_nextGameButton, Color.DarkBlue, _currentState == GameState.Victory ? "SUBJECT YOURSELF TO MORE TORTURE" : "EMBARRASS YOURSELF AGAIN");
-            DrawButton(_victoryMenuButton, Color.Maroon, "RUN AWAY TO MENU LIKE A COWARD");
+            DrawButton(_nextGameButton, Color.DarkBlue, _currentState == GameState.Victory ? "SUBJECT YOURSELF TO MORE TORTURE" : "EMBARRASS YOURSELF AGAIN", 2);
+            DrawButton(_victoryMenuButton, Color.Maroon, "RUN AWAY TO MENU LIKE A COWARD", 2);
         }
 
         _spriteBatch.End();
@@ -549,12 +566,11 @@ public class MonoGameApp : Game
         _spriteBatch.Draw(_pixel, new Rectangle(rect.X + rect.Width - borderWidth, rect.Y, borderWidth, rect.Height), color);
     }
 
-    private void DrawButton(Rectangle rect, Color color, string label)
+    private void DrawButton(Rectangle rect, Color color, string label, int scale)
     {
         DrawHollowRect(new Rectangle(rect.X - 3, rect.Y - 3, rect.Width + 6, rect.Height + 6), 3, Color.White);
         _spriteBatch.Draw(_pixel, rect, color);
 
-        int scale = label.Length > 25 ? 1 : 2;
         DrawCenteredPixelString(label, rect.Y + (rect.Height - (7 * scale)) / 2, scale, Color.White);
     }
 
