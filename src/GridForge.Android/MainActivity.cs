@@ -19,7 +19,7 @@ namespace GridForge.Android
             base.OnCreate(savedInstanceState);
 
             GameApp game = new GameApp();
-            game.Run();
+            game.Run();      
         }
     }
 }
