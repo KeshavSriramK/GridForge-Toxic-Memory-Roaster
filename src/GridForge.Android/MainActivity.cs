@@ -30,9 +30,18 @@ public class MainActivity : AndroidGameActivity
         _game.Run();
     }
 
-    public override void OnBackPressed()
+    public override bool OnKeyDown(Keycode keyCode, KeyEvent? e)
     {
-        // Random sarcastic exit messages
+        if (keyCode == Keycode.Back)
+        {
+            ShowSarcasticExitDialog();
+            return true;
+        }
+        return base.OnKeyDown(keyCode, e);
+    }
+
+    private void ShowSarcasticExitDialog()
+    {
         string[] titles = {
             "RAGE QUITTING ALREADY?",
             "BRAIN OVERLOAD?",
@@ -50,18 +59,18 @@ public class MainActivity : AndroidGameActivity
         var random = new System.Random();
         int index = random.Next(titles.Length);
 
-        new AlertDialog.Builder(this)
-            .SetTitle(titles[index])
-            .SetMessage(messages[index])
-            .SetPositiveButton("Flee Like A Coward", (sender, e) => 
-            {
-                Finish(); // Closes the app
-            })
-            .SetNegativeButton("Stay & Suffer More", (sender, e) => 
-            {
-                // Dismisses popup and keeps game active
-            })
-            .SetCancelable(true)
-            .Show();
+        RunOnUiThread(() =>
+        {
+            new AlertDialog.Builder(this)
+                .SetTitle(titles[index])
+                .SetMessage(messages[index])
+                .SetPositiveButton("Flee Like A Coward", (sender, e) =>
+                {
+                    Finish();
+                })
+                .SetNegativeButton("Stay & Suffer More", (sender, e) => { })
+                .SetCancelable(true)
+                .Show();
+        });
     }
 }
