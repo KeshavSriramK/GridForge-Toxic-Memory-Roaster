@@ -38,7 +38,7 @@ public class MainActivity : AndroidGameActivity
         {
             var layout = new LinearLayout(this)
             {
-                Orientation = Android.Widget.Orientation.Vertical
+                Orientation = Android.Widget.LinearLayout.Orientation.Vertical
             };
             layout.SetPadding(60, 50, 60, 50);
 
