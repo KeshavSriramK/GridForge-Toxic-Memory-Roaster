@@ -28,18 +28,20 @@ namespace GridForge.Core.Engine
 
     public class GameApp : IGameLoop
     {
-        private const int ScreenWidth = 800;
-        private const int ScreenHeight = 700;
+        // Fixed Virtual Canvas Resolution
+        private const int VirtualWidth = 800;
+        private const int VirtualHeight = 700;
 
         private const int GridSize = 20;
         private const int CellSize = 25;
         private const int OffsetX = 150;
         private const int OffsetY = 40;
 
+        private RenderTexture2D _targetCanvas;
+
         private GameState _currentState = GameState.NameInput;
         private GameMode _currentMode = GameMode.None;
 
-        // Stores the player's name across all difficulty modes for the current session
         private string? _userName = null;
         private string _nameInputBuffer = "";
         private const int MaxNameLength = 16;
@@ -70,7 +72,6 @@ namespace GridForge.Core.Engine
         private string _currentGameOverHeadline = "";
         private string _currentGameOverSubtext = "";
 
-        // Animated particle / background elements for home page
         private struct Particle
         {
             public Vector2 Position;
@@ -80,27 +81,21 @@ namespace GridForge.Core.Engine
         }
         private List<Particle> _backgroundParticles = new List<Particle>();
 
-        // Centered Main Menu Buttons
+        // UI Buttons (Virtual Coordinates)
         private Rectangle _btnEasy = new Rectangle(150, 260, 500, 65);
         private Rectangle _btnNormal = new Rectangle(150, 345, 500, 65);
         private Rectangle _btnHard = new Rectangle(150, 430, 500, 65);
 
-        // Name Input Buttons
         private Rectangle _nameInputBox = new Rectangle(200, 320, 400, 50);
         private Rectangle _confirmNameBtn = new Rectangle(250, 400, 300, 50);
 
-        // Tutorial Button
         private Rectangle _startTutorialBtn = new Rectangle(200, 580, 400, 55);
-
-        // Memorize Phase Button
         private Rectangle _startPlayingButton = new Rectangle(200, 625, 400, 45);
 
-        // In-game UI Buttons
         private Rectangle _checkButton = new Rectangle(140, 620, 150, 40);
         private Rectangle _resetButton = new Rectangle(325, 620, 150, 40);
         private Rectangle _menuButton = new Rectangle(510, 620, 150, 40);
 
-        // Victory / Game Over Buttons
         private Rectangle _nextGameButton = new Rectangle(150, 400, 500, 50);
         private Rectangle _victoryMenuButton = new Rectangle(150, 470, 500, 50);
 
@@ -108,14 +103,19 @@ namespace GridForge.Core.Engine
 
         public void Initialize()
         {
-            Raylib.InitWindow(ScreenWidth, ScreenHeight, "GridForge Engine - Toxic Memory Roaster");
+            Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
+            Raylib.InitWindow(VirtualWidth, VirtualHeight, "GridForge Engine - Toxic Memory Roaster");
             Raylib.SetTargetFPS(60);
+
+            // Create off-screen virtual texture canvas
+            _targetCanvas = Raylib.LoadRenderTexture(VirtualWidth, VirtualHeight);
+            Raylib.SetTextureFilter(_targetCanvas.Texture, TextureFilter.Bilinear);
 
             for (int i = 0; i < 40; i++)
             {
                 _backgroundParticles.Add(new Particle
                 {
-                    Position = new Vector2((float)_random.NextDouble() * ScreenWidth, (float)_random.NextDouble() * ScreenHeight),
+                    Position = new Vector2((float)_random.NextDouble() * VirtualWidth, (float)_random.NextDouble() * VirtualHeight),
                     Velocity = new Vector2((float)(_random.NextDouble() * 1.5 - 0.75), (float)(_random.NextDouble() * -1.5 - 0.5)),
                     Size = (float)(_random.NextDouble() * 4 + 2),
                     Color = new Color(
@@ -126,6 +126,43 @@ namespace GridForge.Core.Engine
                     )
                 });
             }
+        }
+
+        private Vector2 GetVirtualInputPosition()
+        {
+            Vector2 rawPosition = Raylib.GetMousePosition();
+            if (Raylib.GetTouchPointCount() > 0)
+            {
+                rawPosition = Raylib.GetTouchPosition(0);
+            }
+
+            float scale = Math.Min(
+                (float)Raylib.GetScreenWidth() / VirtualWidth,
+                (float)Raylib.GetScreenHeight() / VirtualHeight
+            );
+
+            float offsetX = (Raylib.GetScreenWidth() - (VirtualWidth * scale)) * 0.5f;
+            float offsetY = (Raylib.GetScreenHeight() - (VirtualHeight * scale)) * 0.5f;
+
+            Vector2 virtualPos = new Vector2(
+                (rawPosition.X - offsetX) / scale,
+                (rawPosition.Y - offsetY) / scale
+            );
+
+            virtualPos.X = Math.Clamp(virtualPos.X, 0, VirtualWidth);
+            virtualPos.Y = Math.Clamp(virtualPos.Y, 0, VirtualHeight);
+
+            return virtualPos;
+        }
+
+        private bool IsPrimaryInputPressed()
+        {
+            return Raylib.IsMouseButtonPressed(MouseButton.Left) || (Raylib.GetTouchPointCount() > 0 && Raylib.IsGestureDetected(Gesture.Tap));
+        }
+
+        private bool IsPrimaryInputDown()
+        {
+            return Raylib.IsMouseButtonDown(MouseButton.Left) || Raylib.GetTouchPointCount() > 0;
         }
 
         private void StartMode(GameMode mode)
@@ -314,9 +351,9 @@ namespace GridForge.Core.Engine
                 {
                     var p = _backgroundParticles[i];
                     p.Position += p.Velocity;
-                    if (p.Position.Y < -10) p.Position.Y = ScreenHeight + 10;
-                    if (p.Position.X < -10) p.Position.X = ScreenWidth + 10;
-                    if (p.Position.X > ScreenWidth + 10) p.Position.X = -10;
+                    if (p.Position.Y < -10) p.Position.Y = VirtualHeight + 10;
+                    if (p.Position.X < -10) p.Position.X = VirtualWidth + 10;
+                    if (p.Position.X > VirtualWidth + 10) p.Position.X = -10;
                     _backgroundParticles[i] = p;
                 }
             }
@@ -338,7 +375,9 @@ namespace GridForge.Core.Engine
                 }
             }
 
-            Vector2 mousePos = Raylib.GetMousePosition();
+            Vector2 inputPos = GetVirtualInputPosition();
+            bool inputPressed = IsPrimaryInputPressed();
+            bool inputDown = IsPrimaryInputDown();
 
             if (_currentState == GameState.NameInput)
             {
@@ -357,8 +396,7 @@ namespace GridForge.Core.Engine
                     _nameInputBuffer = _nameInputBuffer.Substring(0, _nameInputBuffer.Length - 1);
                 }
 
-                if (Raylib.IsKeyPressed(KeyboardKey.Enter) || 
-                   (Raylib.IsMouseButtonPressed(MouseButton.Left) && IsHovered(mousePos, _confirmNameBtn)))
+                if (Raylib.IsKeyPressed(KeyboardKey.Enter) || (inputPressed && IsHovered(inputPos, _confirmNameBtn)))
                 {
                     _userName = string.IsNullOrWhiteSpace(_nameInputBuffer) ? "Genius" : _nameInputBuffer;
                     _currentState = GameState.MainMenu;
@@ -366,32 +404,32 @@ namespace GridForge.Core.Engine
             }
             else if (_currentState == GameState.MainMenu)
             {
-                if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                if (inputPressed)
                 {
-                    if (IsHovered(mousePos, _btnEasy)) StartMode(GameMode.Easy);
-                    else if (IsHovered(mousePos, _btnNormal)) StartMode(GameMode.Normal);
-                    else if (IsHovered(mousePos, _btnHard)) StartMode(GameMode.Hard);
+                    if (IsHovered(inputPos, _btnEasy)) StartMode(GameMode.Easy);
+                    else if (IsHovered(inputPos, _btnNormal)) StartMode(GameMode.Normal);
+                    else if (IsHovered(inputPos, _btnHard)) StartMode(GameMode.Hard);
                 }
             }
             else if (_currentState == GameState.Tutorial)
             {
-                if (Raylib.IsMouseButtonPressed(MouseButton.Left) && IsHovered(mousePos, _startTutorialBtn))
+                if (inputPressed && IsHovered(inputPos, _startTutorialBtn))
                 {
                     LoadGameStage(_currentLevel, _currentGame);
                 }
             }
             else if (_currentState == GameState.Memorizing)
             {
-                if (Raylib.IsMouseButtonPressed(MouseButton.Left) && IsHovered(mousePos, _startPlayingButton))
+                if (inputPressed && IsHovered(inputPos, _startPlayingButton))
                 {
                     _currentState = GameState.Playing;
                 }
             }
             else if (_currentState == GameState.Playing)
             {
-                if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                if (inputPressed)
                 {
-                    if (IsHovered(mousePos, _checkButton))
+                    if (IsHovered(inputPos, _checkButton))
                     {
                         if (ValidateExactUserPath())
                         {
@@ -410,24 +448,24 @@ namespace GridForge.Core.Engine
                             _statusMessageTimer = 3.0f;
                         }
                     }
-                    else if (IsHovered(mousePos, _resetButton))
+                    else if (IsHovered(inputPos, _resetButton))
                     {
                         _userDrawnPath.Clear();
                     }
-                    else if (IsHovered(mousePos, _menuButton))
+                    else if (IsHovered(inputPos, _menuButton))
                     {
                         _currentState = GameState.MainMenu;
                     }
                 }
 
-                int gridX = (int)((mousePos.X - OffsetX) / CellSize);
-                int gridY = (int)((mousePos.Y - OffsetY) / CellSize);
+                int gridX = (int)((inputPos.X - OffsetX) / CellSize);
+                int gridY = (int)((inputPos.Y - OffsetY) / CellSize);
 
                 if (gridX >= 0 && gridX < GridSize && gridY >= 0 && gridY < GridSize)
                 {
                     if (_grid[gridX, gridY].IsWalkable && !((gridX == 2 && gridY == 10) || (gridX == 18 && gridY == 10)))
                     {
-                        if (Raylib.IsMouseButtonDown(MouseButton.Left))
+                        if (inputDown)
                         {
                             _userDrawnPath.Add((gridX, gridY));
                         }
@@ -440,9 +478,9 @@ namespace GridForge.Core.Engine
             }
             else if (_currentState == GameState.Victory || _currentState == GameState.GameOver)
             {
-                if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                if (inputPressed)
                 {
-                    if (IsHovered(mousePos, _nextGameButton))
+                    if (IsHovered(inputPos, _nextGameButton))
                     {
                         int nextGame = _currentGame + 1;
                         int nextLevel = _currentLevel;
@@ -456,7 +494,7 @@ namespace GridForge.Core.Engine
 
                         LoadGameStage(nextLevel, nextGame);
                     }
-                    else if (IsHovered(mousePos, _victoryMenuButton))
+                    else if (IsHovered(inputPos, _victoryMenuButton))
                     {
                         _currentState = GameState.MainMenu;
                     }
@@ -472,12 +510,15 @@ namespace GridForge.Core.Engine
 
         public void Render()
         {
-            Raylib.BeginDrawing();
+            // 1. Draw to internal Virtual Texture Canvas
+            Raylib.BeginTextureMode(_targetCanvas);
             Raylib.ClearBackground(Color.RayWhite);
+
+            Vector2 inputPos = GetVirtualInputPosition();
 
             if (_currentState == GameState.NameInput)
             {
-                Raylib.DrawRectangleGradientV(0, 0, ScreenWidth, ScreenHeight, new Color(15, 23, 42, 255), new Color(30, 41, 59, 255));
+                Raylib.DrawRectangleGradientV(0, 0, VirtualWidth, VirtualHeight, new Color(15, 23, 42, 255), new Color(30, 41, 59, 255));
                 foreach (var p in _backgroundParticles)
                 {
                     Raylib.DrawCircleV(p.Position, p.Size, p.Color);
@@ -487,10 +528,10 @@ namespace GridForge.Core.Engine
                 Raylib.DrawRectangleLines(100, 100, 600, 480, Color.SkyBlue);
 
                 string promptStr = "WHO IS DARING TO PLAY?";
-                Raylib.DrawText(promptStr, (ScreenWidth - Raylib.MeasureText(promptStr, 28)) / 2, 160, 28, Color.SkyBlue);
+                Raylib.DrawText(promptStr, (VirtualWidth - Raylib.MeasureText(promptStr, 28)) / 2, 160, 28, Color.SkyBlue);
 
                 string subPromptStr = "Enter your name for this gaming session:";
-                Raylib.DrawText(subPromptStr, (ScreenWidth - Raylib.MeasureText(subPromptStr, 18)) / 2, 220, 18, Color.LightGray);
+                Raylib.DrawText(subPromptStr, (VirtualWidth - Raylib.MeasureText(subPromptStr, 18)) / 2, 220, 18, Color.LightGray);
 
                 Raylib.DrawRectangle((int)_nameInputBox.X, (int)_nameInputBox.Y, (int)_nameInputBox.Width, (int)_nameInputBox.Height, Color.DarkBlue);
                 Raylib.DrawRectangleLines((int)_nameInputBox.X, (int)_nameInputBox.Y, (int)_nameInputBox.Width, (int)_nameInputBox.Height, Color.SkyBlue);
@@ -499,7 +540,7 @@ namespace GridForge.Core.Engine
                 Color nameColor = string.IsNullOrEmpty(_nameInputBuffer) ? Color.Gray : Color.White;
                 Raylib.DrawText(displayName, (int)_nameInputBox.X + 20, (int)_nameInputBox.Y + 15, 20, nameColor);
 
-                bool hoverConfirm = IsHovered(Raylib.GetMousePosition(), _confirmNameBtn);
+                bool hoverConfirm = IsHovered(inputPos, _confirmNameBtn);
                 Color btnCol = hoverConfirm ? Color.Lime : Color.Green;
                 Raylib.DrawRectangle((int)_confirmNameBtn.X, (int)_confirmNameBtn.Y, (int)_confirmNameBtn.Width, (int)_confirmNameBtn.Height, btnCol);
                 string confirmStr = "START SESSION (ENTER)";
@@ -507,7 +548,7 @@ namespace GridForge.Core.Engine
             }
             else if (_currentState == GameState.MainMenu)
             {
-                Raylib.DrawRectangleGradientV(0, 0, ScreenWidth, ScreenHeight, new Color(15, 23, 42, 255), new Color(30, 41, 59, 255));
+                Raylib.DrawRectangleGradientV(0, 0, VirtualWidth, VirtualHeight, new Color(15, 23, 42, 255), new Color(30, 41, 59, 255));
                 foreach (var p in _backgroundParticles)
                 {
                     Raylib.DrawCircleV(p.Position, p.Size, p.Color);
@@ -518,19 +559,19 @@ namespace GridForge.Core.Engine
 
                 string titleText = "MEMORY ROASTER 3000";
                 int titleWidth = Raylib.MeasureText(titleText, 34);
-                Raylib.DrawText(titleText, (ScreenWidth - titleWidth) / 2, 75, 34, Color.SkyBlue);
+                Raylib.DrawText(titleText, (VirtualWidth - titleWidth) / 2, 75, 34, Color.SkyBlue);
 
                 string playerWelcome = $"Player: {GetActivePlayerName()}";
                 int welcomeWidth = Raylib.MeasureText(playerWelcome, 20);
-                Raylib.DrawText(playerWelcome, (ScreenWidth - welcomeWidth) / 2, 120, 20, Color.Gold);
+                Raylib.DrawText(playerWelcome, (VirtualWidth - welcomeWidth) / 2, 120, 20, Color.Gold);
 
                 string subText = "Select difficulty mode:";
                 int subWidth = Raylib.MeasureText(subText, 18);
-                Raylib.DrawText(subText, (ScreenWidth - subWidth) / 2, 150, 18, Color.LightGray);
+                Raylib.DrawText(subText, (VirtualWidth - subWidth) / 2, 150, 18, Color.LightGray);
 
-                bool hoverEasy = IsHovered(Raylib.GetMousePosition(), _btnEasy);
-                bool hoverNormal = IsHovered(Raylib.GetMousePosition(), _btnNormal);
-                bool hoverHard = IsHovered(Raylib.GetMousePosition(), _btnHard);
+                bool hoverEasy = IsHovered(inputPos, _btnEasy);
+                bool hoverNormal = IsHovered(inputPos, _btnNormal);
+                bool hoverHard = IsHovered(inputPos, _btnHard);
 
                 Color easyColor = hoverEasy ? new Color(22, 163, 74, 255) : new Color(21, 128, 61, 255);
                 Color normalColor = hoverNormal ? new Color(234, 179, 8, 255) : new Color(202, 138, 4, 255);
@@ -552,7 +593,7 @@ namespace GridForge.Core.Engine
                 Raylib.DrawText(hardStr, (int)_btnHard.X + (int)((_btnHard.Width - Raylib.MeasureText(hardStr, 18)) / 2), (int)_btnHard.Y + 23, 18, Color.White);
 
                 string footerStr = "Tip: Your session name stays active across all modes until you close the application.";
-                Raylib.DrawText(footerStr, (ScreenWidth - Raylib.MeasureText(footerStr, 14)) / 2, 550, 14, Color.Gray);
+                Raylib.DrawText(footerStr, (VirtualWidth - Raylib.MeasureText(footerStr, 14)) / 2, 550, 14, Color.Gray);
             }
             else if (_currentState == GameState.Tutorial)
             {
@@ -561,8 +602,8 @@ namespace GridForge.Core.Engine
                 Raylib.DrawText("HOW TO NOT EMBARRASS YOURSELF", 130, 70, 24, Color.Black);
                 Raylib.DrawText("1. Look at the blue line. Try to actually use your brain.", 100, 140, 20, Color.Black);
                 Raylib.DrawText("2. Click start to hide it. Try not to panic immediately.", 100, 185, 20, Color.Black);
-                Raylib.DrawText("3. Left-click/drag to redraw what you just forgot.", 100, 230, 20, Color.Black);
-                Raylib.DrawText("4. Right-click to erase your miserable mistakes.", 100, 275, 20, Color.DarkBlue);
+                Raylib.DrawText("3. Left-click/touch & drag to redraw what you just forgot.", 100, 230, 20, Color.Black);
+                Raylib.DrawText("4. Right-click/reset to erase your miserable mistakes.", 100, 275, 20, Color.DarkBlue);
                 Raylib.DrawText("5. If you fail, we will judge you silently. (And loudly).", 100, 320, 20, Color.Maroon);
 
                 Raylib.DrawRectangle((int)_startTutorialBtn.X, (int)_startTutorialBtn.Y, (int)_startTutorialBtn.Width, (int)_startTutorialBtn.Height, Color.DarkGreen);
@@ -671,11 +712,32 @@ namespace GridForge.Core.Engine
                 Raylib.DrawText(abandonText, (int)_victoryMenuButton.X + (int)((_victoryMenuButton.Width - Raylib.MeasureText(abandonText, 20)) / 2), (int)_victoryMenuButton.Y + 15, 20, Color.White);
             }
 
+            Raylib.EndTextureMode();
+
+            // 2. Scale & Render the Virtual Texture Canvas to Screen Display (Letterboxed)
+            float scale = Math.Min(
+                (float)Raylib.GetScreenWidth() / VirtualWidth,
+                (float)Raylib.GetScreenHeight() / VirtualHeight
+            );
+
+            Rectangle destRect = new Rectangle(
+                (Raylib.GetScreenWidth() - (VirtualWidth * scale)) * 0.5f,
+                (Raylib.GetScreenHeight() - (VirtualHeight * scale)) * 0.5f,
+                VirtualWidth * scale,
+                VirtualHeight * scale
+            );
+
+            Rectangle sourceRect = new Rectangle(0, 0, VirtualWidth, -VirtualHeight);
+
+            Raylib.BeginDrawing();
+            Raylib.ClearBackground(Color.Black);
+            Raylib.DrawTexturePro(_targetCanvas.Texture, sourceRect, destRect, Vector2.Zero, 0.0f, Color.White);
             Raylib.EndDrawing();
         }
 
         public void Stop()
         {
+            Raylib.UnloadRenderTexture(_targetCanvas);
             Raylib.CloseWindow();
         }
 
