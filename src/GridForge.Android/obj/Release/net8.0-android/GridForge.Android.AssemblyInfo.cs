@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GridForge.Android")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+8885bdfb90259384e0fe072faf2e1838759c716d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+f535934f8b43fb53059d3901588aa3e8c32af980")]
 [assembly: System.Reflection.AssemblyProductAttribute("GridForge.Android")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GridForge.Android")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
