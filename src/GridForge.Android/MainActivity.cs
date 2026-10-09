@@ -1,3 +1,7 @@
+using Android.App;
+using Android.Content.PM;
+using Android.OS;
+
 namespace GridForge.Android;
 
 [Activity(
@@ -9,6 +13,6 @@ public class MainActivity : Activity
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
-        // Initialization code
+        // Engine initialization code
     }
 }
