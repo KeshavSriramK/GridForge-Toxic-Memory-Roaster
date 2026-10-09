@@ -50,22 +50,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Android-Game-APK
-        path: src/GridForge.Android/bin/Release/net8.0-android/*/*-Signed.apk
-
-  # 3. IOS BUILD
-  build-ios:
-    runs-on: macos-latest
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
-
-    - name: Install iOS Workload
-      run: dotnet workload install ios
-
-    - name: Build iOS Project
-      run: dotnet build src/GridForge.iOS/GridForge.iOS.csproj -c Release
+        path: src/GridForge.Android/bin/Release/net8.0-android/android-arm64/publish/*.apk
