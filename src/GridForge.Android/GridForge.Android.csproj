@@ -14,5 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GridForge.Core\GridForge.Core.csproj" />
+    <AndroidResource Include="Resources\mipmap-hdpi\icon.png" />
+    <AndroidResource Include="Resources\drawable\cover.jpg" />
   </ItemGroup>
 </Project>
