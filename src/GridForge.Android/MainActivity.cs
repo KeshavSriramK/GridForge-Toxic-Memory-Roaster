@@ -57,9 +57,6 @@ public class MemoryRoasterView : SurfaceView, ISurfaceHolderCallback
     private GameMode _currentMode = GameMode.None;
 
     private string? _userName = null;
-    private string _nameInputBuffer = "";
-    private const int MaxNameLength = 16;
-
     private int _currentLevel = 1;
     private int _currentGame = 1;
     private int _maxLevels = 5;
@@ -86,17 +83,17 @@ public class MemoryRoasterView : SurfaceView, ISurfaceHolderCallback
     private readonly Random _random = new();
 
     // UI Buttons
-    private RectF _btnEasy = new(150, 260, 650, 325);
-    private RectF _btnNormal = new(150, 345, 650, 410);
-    private RectF _btnHard = new(150, 430, 650, 495);
-    private RectF _confirmNameBtn = new(250, 400, 550, 450);
-    private RectF _startTutorialBtn = new(200, 580, 600, 635);
-    private RectF _startPlayingButton = new(200, 625, 600, 670);
-    private RectF _checkButton = new(140, 620, 290, 660);
-    private RectF _resetButton = new(325, 620, 475, 660);
-    private RectF _menuButton = new(510, 620, 660, 660);
-    private RectF _nextGameButton = new(150, 400, 650, 450);
-    private RectF _victoryMenuButton = new(150, 470, 650, 520);
+    private readonly RectF _btnEasy = new(150, 260, 650, 325);
+    private readonly RectF _btnNormal = new(150, 345, 650, 410);
+    private readonly RectF _btnHard = new(150, 430, 650, 495);
+    private readonly RectF _confirmNameBtn = new(250, 400, 550, 450);
+    private readonly RectF _startTutorialBtn = new(200, 580, 600, 635);
+    private readonly RectF _startPlayingButton = new(200, 625, 600, 670);
+    private readonly RectF _checkButton = new(140, 620, 290, 660);
+    private readonly RectF _resetButton = new(325, 620, 475, 660);
+    private readonly RectF _menuButton = new(510, 620, 660, 660);
+    private readonly RectF _nextGameButton = new(150, 400, 650, 450);
+    private readonly RectF _victoryMenuButton = new(150, 470, 650, 520);
 
     public MemoryRoasterView(Activity context) : base(context)
     {
@@ -106,8 +103,7 @@ public class MemoryRoasterView : SurfaceView, ISurfaceHolderCallback
 
     public void SurfaceCreated(ISurfaceHolder holder)
     {
-        _thread = new RoasterThread(Holder, this);
-        _thread.Running = true;
+        _thread = new RoasterThread(holder, this);
         _thread.Start();
     }
 
@@ -116,10 +112,9 @@ public class MemoryRoasterView : SurfaceView, ISurfaceHolderCallback
 
     public void Start()
     {
-        if (_thread == null)
+        if (_thread == null && Holder != null)
         {
             _thread = new RoasterThread(Holder, this);
-            _thread.Running = true;
             _thread.Start();
         }
     }
@@ -129,10 +124,7 @@ public class MemoryRoasterView : SurfaceView, ISurfaceHolderCallback
         if (_thread != null)
         {
             _thread.Running = false;
-            while (true)
-            {
-                try { _thread.Join(); break; } catch { }
-            }
+            _thread.Join();
             _thread = null;
         }
     }
@@ -366,7 +358,6 @@ public class MemoryRoasterView : SurfaceView, ISurfaceHolderCallback
         canvas.Translate(offX, offY);
         canvas.Scale(scale, scale);
 
-        // Virtual Canvas Background
         using var paint = new Paint { AntiAlias = true };
         paint.Color = Color.ParseColor("#0F172A");
         canvas.DrawRect(0, 0, VirtualWidth, VirtualHeight, paint);
@@ -422,7 +413,6 @@ public class MemoryRoasterView : SurfaceView, ISurfaceHolderCallback
         }
         else if (_currentState == GameState.Memorizing || _currentState == GameState.Playing)
         {
-            // HUD
             paint.Color = Color.White; paint.TextSize = 18; paint.TextAlign = Paint.Align.Left;
             canvas.DrawText($"Player: {GetActivePlayerName()} | {_currentMode} Lvl {_currentLevel}/{_maxLevels}", 160, 25, paint);
 
@@ -433,13 +423,13 @@ public class MemoryRoasterView : SurfaceView, ISurfaceHolderCallback
                 canvas.DrawRect(150, 32, 150 + (500 * timerPct), 38, paint);
             }
 
-            // Grid Rendering
+            // Grid Rendering - Corrected Color references
             for (int x = 0; x < GridSize; x++)
             {
                 for (int y = 0; y < GridSize; y++)
                 {
                     var node = _grid[x, y];
-                    paint.Color = node.IsWalkable ? Color.LTGRAY : Color.DKGRAY;
+                    paint.Color = node.IsWalkable ? Color.LightGray : Color.DarkGray;
 
                     if (_currentState == GameState.Memorizing && _targetSolutionPath.Contains(node))
                         paint.Color = Color.ParseColor("#38BDF8");
@@ -451,10 +441,10 @@ public class MemoryRoasterView : SurfaceView, ISurfaceHolderCallback
                 }
             }
 
-            // Start (Green) and End (Red) Nodes
-            paint.Color = Color.GREEN;
+            // Start and End Nodes
+            paint.Color = Color.Green;
             canvas.DrawRect(OffsetX + 2 * CellSize, OffsetY + 10 * CellSize, OffsetX + 3 * CellSize - 2, OffsetY + 11 * CellSize - 2, paint);
-            paint.Color = Color.RED;
+            paint.Color = Color.Red;
             canvas.DrawRect(OffsetX + 18 * CellSize, OffsetY + 10 * CellSize, OffsetX + 19 * CellSize - 2, OffsetY + 11 * CellSize - 2, paint);
 
             if (_currentState == GameState.Memorizing)
@@ -495,68 +485,4 @@ public class MemoryRoasterView : SurfaceView, ISurfaceHolderCallback
             paint.Color = Color.ParseColor("#1E3A8A"); canvas.DrawRect(_nextGameButton, paint);
             paint.Color = Color.ParseColor("#881337"); canvas.DrawRect(_victoryMenuButton, paint);
 
-            paint.Color = Color.White; paint.TextSize = 18;
-            string btn1 = _currentState == GameState.Victory ? _currentVictoryBtnText : "Embarrass Yourself Again";
-            canvas.DrawText(btn1, VirtualWidth / 2f, 430, paint);
-            canvas.DrawText("Flee to Main Menu", VirtualWidth / 2f, 500, paint);
-        }
-
-        canvas.Restore();
-    }
-}
-
-public class RoasterThread
-{
-    private readonly ISurfaceHolder _holder;
-    private readonly MemoryRoasterView _view;
-    private Thread? _thread;
-    public bool Running { get; set; }
-
-    public RoasterThread(ISurfaceHolder holder, MemoryRoasterView view)
-    {
-        _holder = holder;
-        _view = view;
-    }
-
-    public void Start()
-    {
-        Running = true;
-        _thread = new Thread(RunLoop);
-        _thread.Start();
-    }
-
-    public void Join()
-    {
-        _thread?.Join();
-    }
-
-    private void RunLoop()
-    {
-        long lastTime = SystemClock.ElapsedRealtime();
-
-        while (Running)
-        {
-            Canvas? canvas = null;
-            long now = SystemClock.ElapsedRealtime();
-            float deltaTime = (now - lastTime) / 1000f;
-            lastTime = now;
-
-            try
-            {
-                canvas = _holder.LockCanvas();
-                if (canvas != null)
-                {
-                    lock (_holder)
-                    {
-                        _view.Update(deltaTime);
-                        _view.OnDraw(canvas);
-                    }
-                }
-            }
-            finally
-            {
-                if (canvas != null) _holder.UnlockCanvasAndPost(canvas);
-            }
-        }
-    }
-}
+            paint.Color = Color.White

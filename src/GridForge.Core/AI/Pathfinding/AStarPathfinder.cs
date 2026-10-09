@@ -61,7 +61,7 @@ namespace GridForge.Core.AI.Pathfinding
         }
 
        private List<PathNode> ReconstructPath(PathNode startNode, PathNode endNode)
-        {
+        {   
             List<PathNode> path = new();
             PathNode? current = endNode;
 
