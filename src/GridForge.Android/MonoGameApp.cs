@@ -16,20 +16,15 @@ public class MonoGameApp : Game
     private SpriteBatch _spriteBatch = null!;
     private Texture2D _pixel = null!;
 
-    private const int TargetWidth = 800;
-    private const int TargetHeight = 700;
     private const int GridSize = 20;
-    private const int CellSize = 25;
-
-    private const int GridOffsetX = 150; 
-    private const int GridOffsetY = 100;
-
-    private float _scale = 1f;
-    private Vector2 _screenOffset = Vector2.Zero;
+    private int _cellSize = 20;
+    private int _gridOffsetX = 0;
+    private int _gridOffsetY = 0;
 
     private GameState _currentState = GameState.MainMenu;
     private GameMode _currentMode = GameMode.None;
 
+    private string _userName = "GORI";
     private int _currentLevel = 1;
     private int _currentGame = 1;
     private int _maxLevels = 5;
@@ -38,37 +33,35 @@ public class MonoGameApp : Game
     private float _timeRemaining = 30f;
     private float _maxTimeForLevel = 30f;
 
-    private float _peekTimer = 0f;
-
     private PathNode[,] _grid = null!;
     private AStarPathfinder _pathfinder = null!;
     private List<PathNode> _targetSolutionPath = new();
     private HashSet<(int X, int Y)> _targetSolutionSet = new();
-    private List<(int X, int Y)> _userDrawnPathList = new();
-    private HashSet<(int X, int Y)> _userDrawnPathSet = new();
+    private HashSet<(int X, int Y)> _userDrawnPath = new();
 
     private string _statusMessage = "";
     private float _statusMessageTimer = 0f;
 
+    private string _currentVictoryHeadline = "";
+    private string _currentVictorySubtext = "";
+    private string _currentGameOverHeadline = "";
+    private string _currentGameOverSubtext = "";
+
     private readonly Random _random = new();
 
-    // UI Rectangles
-    private readonly Rectangle _btnEasy = new(200, 200, 400, 60);
-    private readonly Rectangle _btnNormal = new(200, 290, 400, 60);
-    private readonly Rectangle _btnHard = new(200, 380, 400, 60);
+    // Responsive Button Rectangles
+    private Rectangle _btnEasy;
+    private Rectangle _btnNormal;
+    private Rectangle _btnHard;
+    private Rectangle _startTutorialBtn;
+    private Rectangle _startPlayingButton;
+    private Rectangle _checkButton;
+    private Rectangle _resetButton;
+    private Rectangle _menuButton;
+    private Rectangle _nextGameButton;
+    private Rectangle _victoryMenuButton;
 
-    private readonly Rectangle _startTutorialBtn = new(200, 580, 400, 55);
-    private readonly Rectangle _startPlayingButton = new(200, 620, 400, 50);
-
-    private readonly Rectangle _checkButton = new(80, 620, 140, 50);
-    private readonly Rectangle _undoButton = new(240, 620, 140, 50);
-    private readonly Rectangle _peekButton = new(400, 620, 140, 50);
-    private readonly Rectangle _menuButton = new(560, 620, 140, 50);
-
-    private readonly Rectangle _nextGameButton = new(200, 450, 400, 55);
-    private readonly Rectangle _victoryMenuButton = new(200, 520, 400, 55);
-
-    // Procedural 5x7 Pixel Font Mapping
+    // 5x7 Pixel Font Map
     private static readonly Dictionary<char, byte[]> FontData = new()
     {
         { 'A', new byte[] { 0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11 } },
@@ -109,7 +102,12 @@ public class MonoGameApp : Game
         { '9', new byte[] { 0x0E, 0x11, 0x11, 0x0F, 0x01, 0x02, 0x0C } },
         { ' ', new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } },
         { '!', new byte[] { 0x04, 0x04, 0x04, 0x04, 0x04, 0x00, 0x04 } },
-        { ':', new byte[] { 0x00, 0x0C, 0x0C, 0x00, 0x0C, 0x0C, 0x00 } },
+        { '?', new byte[] { 0x0E, 0x11, 0x01, 0x02, 0x04, 0x00, 0x04 } },
+        { '.', new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x0C, 0x0C } },
+        { ',', new byte[] { 0x00, 0x00, 0x00, 0x00, 0x0C, 0x04, 0x08 } },
+        { '(', new byte[] { 0x02, 0x04, 0x08, 0x08, 0x08, 0x04, 0x02 } },
+        { ')', new byte[] { 0x08, 0x04, 0x02, 0x02, 0x02, 0x04, 0x08 } },
+        { '/', new byte[] { 0x01, 0x02, 0x04, 0x08, 0x10, 0x00, 0x00 } },
         { '-', new byte[] { 0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00 } }
     };
 
@@ -132,29 +130,65 @@ public class MonoGameApp : Game
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
 
-        CalculateScaleAndOffset();
+        RecalculateLayout();
         base.Initialize();
     }
 
-    private void CalculateScaleAndOffset()
+    private void RecalculateLayout()
     {
-        float screenW = GraphicsDevice.Viewport.Width;
-        float screenH = GraphicsDevice.Viewport.Height;
+        int screenW = GraphicsDevice.Viewport.Width;
+        int screenH = GraphicsDevice.Viewport.Height;
 
-        float scaleX = screenW / TargetWidth;
-        float scaleY = screenH / TargetHeight;
+        bool isLandscape = screenW > screenH;
 
-        _scale = Math.Min(scaleX, scaleY);
+        if (isLandscape)
+        {
+            int maxGridHeight = screenH - 120;
+            _cellSize = Math.Max(12, maxGridHeight / GridSize);
+            int totalGridDim = _cellSize * GridSize;
 
-        float vpWidth = TargetWidth * _scale;
-        float vpHeight = TargetHeight * _scale;
+            _gridOffsetX = (screenW - totalGridDim) / 2;
+            _gridOffsetY = 60;
 
-        _screenOffset = new Vector2((screenW - vpWidth) * 0.5f, (screenH - vpHeight) * 0.5f);
-    }
+            int btnWidth = 140;
+            int btnHeight = 45;
+            int btnY = screenH - 55;
 
-    private Vector2 ScreenToVirtual(Vector2 screenPos)
-    {
-        return (screenPos - _screenOffset) / _scale;
+            _checkButton = new Rectangle(_gridOffsetX, btnY, btnWidth, btnHeight);
+            _resetButton = new Rectangle(_gridOffsetX + (totalGridDim / 2) - (btnWidth / 2), btnY, btnWidth, btnHeight);
+            _menuButton = new Rectangle(_gridOffsetX + totalGridDim - btnWidth, btnY, btnWidth, btnHeight);
+        }
+        else
+        {
+            // Portrait Mobile Layout
+            int maxGridWidth = screenW - 40;
+            _cellSize = Math.Max(10, maxGridWidth / GridSize);
+            int totalGridDim = _cellSize * GridSize;
+
+            _gridOffsetX = (screenW - totalGridDim) / 2;
+            _gridOffsetY = 80;
+
+            int btnWidth = (totalGridDim - 20) / 3;
+            int btnHeight = 50;
+            int btnY = _gridOffsetY + totalGridDim + 20;
+
+            _checkButton = new Rectangle(_gridOffsetX, btnY, btnWidth, btnHeight);
+            _resetButton = new Rectangle(_gridOffsetX + btnWidth + 10, btnY, btnWidth, btnHeight);
+            _menuButton = new Rectangle(_gridOffsetX + (btnWidth + 10) * 2, btnY, btnWidth, btnHeight);
+        }
+
+        int menuWidth = Math.Min(screenW - 60, 450);
+        int menuX = (screenW - menuWidth) / 2;
+
+        _btnEasy = new Rectangle(menuX, 180, menuWidth, 55);
+        _btnNormal = new Rectangle(menuX, 250, menuWidth, 55);
+        _btnHard = new Rectangle(menuX, 320, menuWidth, 55);
+
+        _startTutorialBtn = new Rectangle(menuX, screenH - 80, menuWidth, 50);
+        _startPlayingButton = new Rectangle(menuX, screenH - 80, menuWidth, 50);
+
+        _nextGameButton = new Rectangle(menuX, screenH - 140, menuWidth, 50);
+        _victoryMenuButton = new Rectangle(menuX, screenH - 75, menuWidth, 50);
     }
 
     private void StartMode(GameMode mode)
@@ -162,8 +196,10 @@ public class MonoGameApp : Game
         _currentMode = mode;
         _currentLevel = 1;
         _currentGame = 1;
+
         _maxLevels = mode switch { GameMode.Easy => 5, GameMode.Normal => 10, _ => 20 };
         _maxTimeForLevel = mode switch { GameMode.Easy => 30f, GameMode.Normal => 20f, _ => 15f };
+
         _currentState = GameState.Tutorial;
     }
 
@@ -172,12 +208,10 @@ public class MonoGameApp : Game
         _currentLevel = level;
         _currentGame = game;
         _timeRemaining = _maxTimeForLevel;
-        _peekTimer = 0f;
         _statusMessage = "";
         _targetSolutionPath.Clear();
         _targetSolutionSet.Clear();
-        _userDrawnPathList.Clear();
-        _userDrawnPathSet.Clear();
+        _userDrawnPath.Clear();
 
         _grid = new PathNode[GridSize, GridSize];
         for (int x = 0; x < GridSize; x++)
@@ -214,10 +248,54 @@ public class MonoGameApp : Game
 
     private bool ValidateExactUserPath()
     {
-        if (_userDrawnPathSet.Count != _targetSolutionSet.Count) return false;
-        foreach (var cell in _userDrawnPathSet)
+        if (_userDrawnPath.Count != _targetSolutionSet.Count) return false;
+        foreach (var cell in _userDrawnPath)
             if (!_targetSolutionSet.Contains(cell)) return false;
         return true;
+    }
+
+    private void TriggerVictory()
+    {
+        string name = _userName.ToUpper();
+        string[] headlines = {
+            $"OH, YOU ACTUALLY DID IT, {name}?",
+            $"PURE BLIND LUCK, {name}!",
+            $"WHO LET {name} WIN?",
+            $"CONGRATULATIONS, {name} THE GOLDFISH!"
+        };
+
+        string[] subtexts = {
+            $"{name}, you managed to trace a line without drooling.",
+            $"Even a toddler could do it, but hey, take your win.",
+            $"Don't let it go to your head {name}, your IQ is still in danger.",
+            $"Miracles happen. Too bad the next stage will crush you."
+        };
+
+        _currentVictoryHeadline = headlines[_random.Next(headlines.Length)];
+        _currentVictorySubtext = subtexts[_random.Next(subtexts.Length)];
+        _currentState = GameState.Victory;
+    }
+
+    private void TriggerGameOver()
+    {
+        string name = _userName.ToUpper();
+        string[] headlines = {
+            $"TIME'S UP, {name}.",
+            $"{name} HAS THE MEMORY OF A GOLDFISH.",
+            $"ABSOLUTE DISASTER, {name}!",
+            $"YIKES, {name}. JUST YIKES."
+        };
+
+        string[] subtexts = {
+            $"That path was on screen for seconds. Did you forget how to see?",
+            $"Your brain cells fired, but unfortunately none connected.",
+            $"Even a goldfish remembers things longer than {name}.",
+            $"That was painful to watch, {name}. Try using your brain."
+        };
+
+        _currentGameOverHeadline = headlines[_random.Next(headlines.Length)];
+        _currentGameOverSubtext = subtexts[_random.Next(subtexts.Length)];
+        _currentState = GameState.GameOver;
     }
 
     protected override void LoadContent()
@@ -235,19 +313,14 @@ public class MonoGameApp : Game
             if (_statusMessageTimer <= 0) _statusMessage = "";
         }
 
-        if (_peekTimer > 0)
-        {
-            _peekTimer -= dt;
-            if (_peekTimer <= 0) _peekTimer = 0f;
-        }
-
         if (_currentState == GameState.Playing)
         {
             _timeRemaining -= dt;
             if (_timeRemaining <= 0)
             {
                 _timeRemaining = 0;
-                _currentState = GameState.GameOver;
+                TriggerGameOver();
+                return;
             }
         }
 
@@ -255,8 +328,8 @@ public class MonoGameApp : Game
         if (touchState.Count > 0)
         {
             var touch = touchState[0];
-            Vector2 virtualPos = ScreenToVirtual(touch.Position);
-            Point posPoint = new((int)virtualPos.X, (int)virtualPos.Y);
+            Vector2 touchPos = touch.Position;
+            Point posPoint = new((int)touchPos.X, (int)touchPos.Y);
 
             if (touch.State == TouchLocationState.Pressed)
             {
@@ -278,26 +351,27 @@ public class MonoGameApp : Game
                 {
                     if (_checkButton.Contains(posPoint))
                     {
-                        if (ValidateExactUserPath()) _currentState = GameState.Victory;
-                        else { _statusMessage = "WRONG PATH! TRY AGAIN!"; _statusMessageTimer = 3.0f; }
-                    }
-                    else if (_undoButton.Contains(posPoint))
-                    {
-                        // Undo last drawn cell
-                        if (_userDrawnPathList.Count > 0)
+                        if (ValidateExactUserPath()) TriggerVictory();
+                        else
                         {
-                            var last = _userDrawnPathList[^1];
-                            _userDrawnPathList.RemoveAt(_userDrawnPathList.Count - 1);
-                            _userDrawnPathSet.Remove(last);
+                            string[] insults = {
+                                $"Are your eyes painted on, {_userName}? Totally wrong.",
+                                $"Did you draw this with your eyes closed?",
+                                $"Absolute trash tier drawing, {_userName}.",
+                                $"Epic fail. That path looks like a toddler's scribble."
+                            };
+                            _statusMessage = insults[_random.Next(insults.Length)];
+                            _statusMessageTimer = 3.0f;
                         }
                     }
-                    else if (_peekButton.Contains(posPoint))
+                    else if (_resetButton.Contains(posPoint))
                     {
-                        // Flash solution path for 2 seconds (5s penalty)
-                        _peekTimer = 2.0f;
-                        _timeRemaining = Math.Max(1f, _timeRemaining - 5f);
+                        _userDrawnPath.Clear();
                     }
-                    else if (_menuButton.Contains(posPoint)) _currentState = GameState.MainMenu;
+                    else if (_menuButton.Contains(posPoint))
+                    {
+                        _currentState = GameState.MainMenu;
+                    }
                 }
                 else if ((_currentState == GameState.Victory || _currentState == GameState.GameOver) && _nextGameButton.Contains(posPoint))
                 {
@@ -314,18 +388,15 @@ public class MonoGameApp : Game
 
             if (_currentState == GameState.Playing && (touch.State == TouchLocationState.Pressed || touch.State == TouchLocationState.Moved))
             {
-                int gx = (int)((virtualPos.X - GridOffsetX) / CellSize);
-                int gy = (int)((virtualPos.Y - GridOffsetY) / CellSize);
+                int gx = (int)((touchPos.X - _gridOffsetX) / _cellSize);
+                int gy = (int)((touchPos.Y - _gridOffsetY) / _cellSize);
                 if (gx >= 0 && gx < GridSize && gy >= 0 && gy < GridSize)
                 {
                     if (_grid[gx, gy].IsWalkable && !((gx == 2 && gy == 10) || (gx == 18 && gy == 10)))
                     {
                         var cell = (gx, gy);
-                        if (!_userDrawnPathSet.Contains(cell))
-                        {
-                            _userDrawnPathSet.Add(cell);
-                            _userDrawnPathList.Add(cell);
-                        }
+                        if (!_userDrawnPath.Contains(cell))
+                            _userDrawnPath.Add(cell);
                     }
                 }
             }
@@ -337,82 +408,97 @@ public class MonoGameApp : Game
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(Color.Black);
+        _spriteBatch.Begin();
 
-        Matrix transform = Matrix.CreateScale(_scale) * Matrix.CreateTranslation(_screenOffset.X, _screenOffset.Y, 0);
-        _spriteBatch.Begin(transformMatrix: transform);
-
-        _spriteBatch.Draw(_pixel, new Rectangle(0, 0, TargetWidth, TargetHeight), new Color(15, 23, 42));
+        int screenW = GraphicsDevice.Viewport.Width;
+        int screenH = GraphicsDevice.Viewport.Height;
 
         if (_currentState == GameState.MainMenu)
         {
-            DrawPixelString("MEMORY ROASTER 3000", 220, 80, 3, Color.SkyBlue);
-            DrawButton(_btnEasy, Color.Green, "EASY MODE");
-            DrawButton(_btnNormal, Color.Gold, "NORMAL MODE");
-            DrawButton(_btnHard, Color.Crimson, "HARD MODE");
+            _spriteBatch.Draw(_pixel, new Rectangle(0, 0, screenW, screenH), new Color(15, 23, 42));
+
+            DrawPixelString("MEMORY ROASTER 3000", (screenW - 380) / 2, 60, 3, Color.SkyBlue);
+            DrawPixelString($"Player: {_userName}", (screenW - 180) / 2, 110, 2, Color.Gold);
+
+            DrawButton(_btnEasy, new Color(21, 128, 61), "EASY (3 Brain Cells)");
+            DrawButton(_btnNormal, new Color(202, 138, 4), "NORMAL (You'll Fail)");
+            DrawButton(_btnHard, new Color(190, 18, 60), "HARD (Prepare To Cry)");
         }
         else if (_currentState == GameState.Tutorial)
         {
-            DrawPixelString("MEMORIZE BLUE PATH", 200, 100, 3, Color.SkyBlue);
-            DrawPixelString("DRAW IT FROM GREEN TO RED", 140, 180, 2, Color.White);
-            DrawButton(_startTutorialBtn, Color.DarkGreen, "START GAME");
+            _spriteBatch.Draw(_pixel, new Rectangle(0, 0, screenW, screenH), Color.WhiteSmoke);
+
+            DrawPixelString($"WELCOME, {_userName.ToUpper()}!", 30, 30, 3, Color.DarkBlue);
+            DrawPixelString("HOW TO NOT EMBARRASS YOURSELF", 30, 70, 2, Color.Black);
+
+            DrawPixelString("1. Look at the blue line. Try to actually use your brain.", 30, 130, 2, Color.Black);
+            DrawPixelString("2. Click start to hide it. Try not to panic immediately.", 30, 175, 2, Color.Black);
+            DrawPixelString("3. Touch & drag across cells to redraw what you forgot.", 30, 220, 2, Color.Black);
+            DrawPixelString("4. Tap Wipe Shame to erase your miserable mistakes.", 30, 265, 2, Color.DarkBlue);
+            DrawPixelString("5. If you fail, we will judge you loudly.", 30, 310, 2, Color.Maroon);
+
+            DrawButton(_startTutorialBtn, Color.DarkGreen, "I DARE TO TRY");
         }
         else if (_currentState == GameState.Memorizing || _currentState == GameState.Playing)
         {
+            _spriteBatch.Draw(_pixel, new Rectangle(0, 0, screenW, screenH), Color.WhiteSmoke);
+
+            DrawPixelString($"Player: {_userName} | {_currentMode} Lvl {_currentLevel}/{_maxLevels}", _gridOffsetX, 15, 2, Color.DarkGray);
+
             if (_currentState == GameState.Playing)
             {
-                float pct = _timeRemaining / _maxTimeForLevel;
-                Color timerCol = pct > 0.4f ? Color.LimeGreen : Color.Red;
-                _spriteBatch.Draw(_pixel, new Rectangle(GridOffsetX, 40, (int)(500 * pct), 15), timerCol);
-                DrawPixelString($"TIME: {(int)_timeRemaining}S", 680, 38, 2, Color.White);
+                float timerPct = _timeRemaining / _maxTimeForLevel;
+                Color timerColor = timerPct > 0.4f ? Color.DarkGreen : Color.Maroon;
+                _spriteBatch.Draw(_pixel, new Rectangle(_gridOffsetX, 38, (int)((_cellSize * GridSize) * timerPct), 8), timerColor);
             }
 
-            // Grid Rendering
+            // Grid Rendering (Fluid Screen Size)
             for (int x = 0; x < GridSize; x++)
             {
                 for (int y = 0; y < GridSize; y++)
                 {
                     var node = _grid[x, y];
-                    Color cellColor = node.IsWalkable ? new Color(226, 232, 240) : new Color(71, 85, 105);
+                    Color color = node.IsWalkable ? Color.LightGray : Color.DarkGray;
 
-                    bool showSolution = (_currentState == GameState.Memorizing) || (_peekTimer > 0f);
+                    if (_currentState == GameState.Memorizing && _targetSolutionPath.Contains(node))
+                        color = Color.SkyBlue;
+                    else if (_currentState == GameState.Playing && _userDrawnPath.Contains((x, y)))
+                        color = Color.SkyBlue;
 
-                    if (showSolution && _targetSolutionPath.Contains(node))
-                        cellColor = new Color(56, 189, 248);
-                    else if (_currentState == GameState.Playing && _userDrawnPathSet.Contains((x, y)))
-                        cellColor = new Color(56, 189, 248);
-
-                    _spriteBatch.Draw(_pixel, new Rectangle(GridOffsetX + x * CellSize, GridOffsetY + y * CellSize, CellSize - 2, CellSize - 2), cellColor);
+                    _spriteBatch.Draw(_pixel, new Rectangle(_gridOffsetX + x * _cellSize, _gridOffsetY + y * _cellSize, _cellSize - 2, _cellSize - 2), color);
                 }
             }
 
-            // Start & End Cells
-            _spriteBatch.Draw(_pixel, new Rectangle(GridOffsetX + 2 * CellSize, GridOffsetY + 10 * CellSize, CellSize - 2, CellSize - 2), Color.LimeGreen);
-            _spriteBatch.Draw(_pixel, new Rectangle(GridOffsetX + 18 * CellSize, GridOffsetY + 10 * CellSize, CellSize - 2, CellSize - 2), Color.Red);
+            // Green Start & Red End
+            _spriteBatch.Draw(_pixel, new Rectangle(_gridOffsetX + 2 * _cellSize, _gridOffsetY + 10 * _cellSize, _cellSize - 2, _cellSize - 2), Color.LimeGreen);
+            _spriteBatch.Draw(_pixel, new Rectangle(_gridOffsetX + 18 * _cellSize, _gridOffsetY + 10 * _cellSize, _cellSize - 2, _cellSize - 2), Color.Red);
 
-            // Action Buttons
+            if (!string.IsNullOrEmpty(_statusMessage))
+            {
+                DrawPixelString(_statusMessage, _gridOffsetX, _gridOffsetY - 20, 2, Color.Maroon);
+            }
+
             if (_currentState == GameState.Memorizing)
             {
-                DrawButton(_startPlayingButton, Color.DarkGreen, "START DRAWING");
+                DrawButton(_startPlayingButton, Color.DarkGreen, "I'M READY (PROVE ME WRONG)");
             }
             else
             {
-                DrawButton(_checkButton, Color.DarkGreen, "CHECK");
-                DrawButton(_undoButton, Color.DarkBlue, "UNDO");
-                DrawButton(_peekButton, Color.DarkGoldenrod, "PEEK (-5S)");
-                DrawButton(_menuButton, Color.Maroon, "MENU");
-
-                if (!string.IsNullOrEmpty(_statusMessage))
-                    DrawPixelString(_statusMessage, 260, 580, 2, Color.Red);
+                DrawButton(_checkButton, Color.DarkGreen, "CHECK WORK");
+                DrawButton(_resetButton, Color.DarkBlue, "Wipe Shame");
+                DrawButton(_menuButton, Color.Maroon, "Give Up");
             }
         }
         else if (_currentState == GameState.Victory || _currentState == GameState.GameOver)
         {
-            Color bannerCol = _currentState == GameState.Victory ? Color.LimeGreen : Color.Crimson;
-            string title = _currentState == GameState.Victory ? "VICTORY!" : "GAME OVER!";
-            DrawPixelString(title, 320, 200, 4, bannerCol);
+            _spriteBatch.Draw(_pixel, new Rectangle(0, 0, screenW, screenH), Color.WhiteSmoke);
 
-            DrawButton(_nextGameButton, Color.DarkBlue, "NEXT LEVEL");
-            DrawButton(_victoryMenuButton, Color.Maroon, "MAIN MENU");
+            Color borderCol = _currentState == GameState.Victory ? Color.DarkGreen : Color.Maroon;
+            DrawPixelString(_currentVictoryHeadline, 30, 100, 2, borderCol);
+            DrawPixelString(_currentVictorySubtext, 30, 160, 2, Color.DarkGray);
+
+            DrawButton(_nextGameButton, Color.DarkBlue, "Embarrass Yourself Again");
+            DrawButton(_victoryMenuButton, Color.Maroon, "Run Away to Main Menu");
         }
 
         _spriteBatch.End();
@@ -421,7 +507,7 @@ public class MonoGameApp : Game
 
     private void DrawButton(Rectangle rect, Color color, string label)
     {
-        _spriteBatch.Draw(_pixel, new Rectangle(rect.X - 3, rect.Y - 3, rect.Width + 6, rect.Height + 6), Color.White);
+        _spriteBatch.Draw(_pixel, new Rectangle(rect.X - 2, rect.Y - 2, rect.Width + 4, rect.Height + 4), Color.White);
         _spriteBatch.Draw(_pixel, rect, color);
 
         int textWidth = label.Length * 12;
