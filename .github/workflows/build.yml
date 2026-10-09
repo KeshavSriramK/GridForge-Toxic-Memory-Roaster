@@ -6,27 +6,7 @@ on:
   pull_request:
     branches: [ "main" ]
 
-env:
-  CheckEolTargetFramework: "false"
-
 jobs:
-  build-desktop:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: global.json
-
-      - name: Restore dependencies
-        run: dotnet restore src/GridForge.Desktop/GridForge.Desktop.csproj
-
-      - name: Build Desktop
-        run: dotnet build src/GridForge.Desktop/GridForge.Desktop.csproj -c Release
-
   build-android:
     runs-on: windows-latest
 
@@ -36,19 +16,19 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '9.0.x'
 
     - name: Install Android Workload
       run: dotnet workload install android
 
     - name: Restore dependencies
-      run: dotnet restore src/GridForge.Android/GridForge.Android.csproj -p:CheckEolTargetFramework=false
+      run: dotnet restore src/GridForge.Android/GridForge.Android.csproj
 
     - name: Publish Android App
-      run: dotnet publish src/GridForge.Android/GridForge.Android.csproj -c Release -p:CheckEolTargetFramework=false
+      run: dotnet publish src/GridForge.Android/GridForge.Android.csproj -c Release
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: GridForge-Android-APK
-        path: src/GridForge.Android/bin/Release/net8.0-android/publish/*.apk
+        path: src/GridForge.Android/bin/Release/net9.0-android/publish/*.apk
