@@ -26,7 +26,7 @@ jobs:
         run: dotnet build src/GridForge.Desktop/GridForge.Desktop.csproj -c Release
 
   build-android:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,13 +36,11 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Install Android Workload & Sync Environment
-        run: |
-          dotnet workload install android
-          echo "DOTNET_ROOT=$SDK_PATH" >> $GITHUB_ENV
-          echo "PATH=$SDK_PATH:$PATH" >> $GITHUB_ENV
-        env:
-          SDK_PATH: ${{ steps.setup-dotnet.outputs.dotnet-path }}
+      - name: Install Android Workload
+        run: dotnet workload install android
+
+      - name: Restore dependencies
+        run: dotnet restore src/GridForge.Android/GridForge.Android.csproj
 
       - name: Publish Android App
-        run: dotnet publish src/GridForge.Android/GridForge.Android.csproj -c Release -f net8.0-android
+        run: dotnet publish src/GridForge.Android/GridForge.Android.csproj -c Release -f net8.0-android34.0
