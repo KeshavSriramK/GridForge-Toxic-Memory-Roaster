@@ -1,3 +1,4 @@
+using System;
 using Android.App;
 using Android.Content;
 using Android.Content.PM;
@@ -68,7 +69,7 @@ public class MainActivity : AndroidGameActivity
                         name = fallbackRoasts[new System.Random().Next(fallbackRoasts.Length)];
 
                         new AlertDialog.Builder(this)
-                            .setTitle("TOO LAZY TO TYPE?")
+                            .SetTitle("TOO LAZY TO TYPE?")
                             .SetMessage(CrawlRandomRoastMessage(name))
                             .SetPositiveButton("Accept My Fate", (s, a) => onNameEntered(name))
                             .Show();
