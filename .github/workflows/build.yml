@@ -2,10 +2,12 @@ name: Build Cross-Platform Game Engine
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+    branches: [ "main" ]
+
+env:
+  CheckEolTargetFramework: "false"
 
 jobs:
   build-desktop:
@@ -27,26 +29,20 @@ jobs:
 
   build-android:
     runs-on: windows-latest
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: global.json
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
 
-      - name: Install Android Workload
-        run: dotnet workload install android
+    - name: Install Android Workload
+      run: dotnet workload install android --configfile nuget.config
 
-      - name: Restore dependencies
-        run: dotnet restore src/GridForge.Android/GridForge.Android.csproj
+    - name: Restore dependencies
+      run: dotnet restore src/GridForge.Android/GridForge.Android.csproj -p:CheckEolTargetFramework=false
 
-      - name: Publish Android App
-        run: dotnet publish src/GridForge.Android/GridForge.Android.csproj -c Release
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: GridForge-Android-APK
-          path: src/GridForge.Android/bin/Release/net8.0-android/publish/*.apk
+    - name: Publish Android App
+      run: dotnet publish src/GridForge.Android/GridForge.Android.csproj -c Release -p:CheckEolTargetFramework=false
