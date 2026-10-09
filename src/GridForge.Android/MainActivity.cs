@@ -36,8 +36,10 @@ public class MainActivity : AndroidGameActivity
     {
         RunOnUiThread(() =>
         {
-            var layout = new LinearLayout(this);
-            layout.SetOrientation(1); // 1 = Vertical orientation for Android LinearLayout
+            var layout = new LinearLayout(this)
+            {
+                Orientation = (int)global::Android.Widget.Orientation.Vertical
+            };
             layout.SetPadding(60, 50, 60, 50);
 
             var input = new EditText(this)
