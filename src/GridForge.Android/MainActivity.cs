@@ -41,7 +41,9 @@ public class MainActivity : Activity
 
 public class GameView : SurfaceView, ISurfaceHolderCallback
 {
-    private GameThread? _thread;
+    private Thread? _gameThread;
+    private bool _isRunning;
+    private readonly ISurfaceHolder _holder;
     private readonly List<MemoryNode> _nodes = new();
     private readonly Random _random = new();
     private int _score = 0;
@@ -50,15 +52,14 @@ public class GameView : SurfaceView, ISurfaceHolderCallback
 
     public GameView(Activity context) : base(context)
     {
-        Holder?.AddCallback(this);
+        _holder = Holder!;
+        _holder.AddCallback(this);
         Focusable = true;
     }
 
     public void SurfaceCreated(ISurfaceHolder holder)
     {
-        _thread = new GameThread(Holder, this);
-        _thread.Running = true;
-        _thread.Start();
+        Start();
     }
 
     public void SurfaceChanged(ISurfaceHolder holder, Format format, int width, int height) { }
@@ -70,29 +71,56 @@ public class GameView : SurfaceView, ISurfaceHolderCallback
 
     public void Start()
     {
-        if (_thread == null)
-        {
-            _thread = new GameThread(Holder, this);
-            _thread.Running = true;
-            _thread.Start();
-        }
+        if (_isRunning) return;
+        _isRunning = true;
+        _gameThread = new Thread(RunGameLoop);
+        _gameThread.Start();
     }
 
     public void Stop()
     {
-        if (_thread != null)
+        _isRunning = false;
+        if (_gameThread != null && _gameThread.IsAlive)
         {
-            _thread.Running = false;
-            while (true)
+            try
             {
-                try
-                {
-                    _thread.Join();
-                    break;
-                }
-                catch { }
+                _gameThread.Join();
             }
-            _thread = null;
+            catch { }
+        }
+        _gameThread = null;
+    }
+
+    private void RunGameLoop()
+    {
+        long lastTime = SystemClock.ElapsedRealtime();
+
+        while (_isRunning)
+        {
+            Canvas? canvas = null;
+            long now = SystemClock.ElapsedRealtime();
+            float deltaTime = (now - lastTime) / 1000f;
+            lastTime = now;
+
+            try
+            {
+                canvas = _holder.LockCanvas();
+                if (canvas != null)
+                {
+                    lock (_holder)
+                    {
+                        Update(deltaTime);
+                        OnDraw(canvas);
+                    }
+                }
+            }
+            finally
+            {
+                if (canvas != null)
+                {
+                    _holder.UnlockCanvasAndPost(canvas);
+                }
+            }
         }
     }
 
@@ -105,7 +133,6 @@ public class GameView : SurfaceView, ISurfaceHolderCallback
 
             if (_lives <= 0)
             {
-                // Restart game on tap when Game Over
                 _score = 0;
                 _lives = 3;
                 lock (_nodes) { _nodes.Clear(); }
@@ -131,12 +158,12 @@ public class GameView : SurfaceView, ISurfaceHolderCallback
         return true;
     }
 
-    public void Update(float deltaTime)
+    private void Update(float deltaTime)
     {
         if (_lives <= 0) return;
 
         _spawnTimer += deltaTime;
-        if (_spawnTimer >= 0.8f) // Spawn node every 0.8s
+        if (_spawnTimer >= 0.8f)
         {
             _spawnTimer = 0;
             lock (_nodes)
@@ -156,7 +183,7 @@ public class GameView : SurfaceView, ISurfaceHolderCallback
             {
                 var node = _nodes[i];
                 node.Radius += node.GrowRate;
-                if (node.Radius > 180) // Max size before exploding
+                if (node.Radius > 180)
                 {
                     _nodes.RemoveAt(i);
                     _lives--;
@@ -165,11 +192,10 @@ public class GameView : SurfaceView, ISurfaceHolderCallback
         }
     }
 
-    public new void OnDraw(Canvas canvas)
+    protected override void OnDraw(Canvas canvas)
     {
         base.OnDraw(canvas);
 
-        // Dark Background
         canvas.DrawColor(Color.ParseColor("#0D1117"));
 
         using var paint = new Paint();
@@ -189,7 +215,6 @@ public class GameView : SurfaceView, ISurfaceHolderCallback
             return;
         }
 
-        // Draw Nodes (Code Memory Leaks)
         lock (_nodes)
         {
             foreach (var node in _nodes)
@@ -205,7 +230,6 @@ public class GameView : SurfaceView, ISurfaceHolderCallback
             }
         }
 
-        // Draw HUD
         paint.Color = Color.ParseColor("#3FB950");
         paint.TextSize = 48;
         paint.SetStyle(Paint.Style.Fill);
@@ -230,51 +254,5 @@ public class MemoryNode
         Y = y;
         Radius = radius;
         GrowRate = growRate;
-    }
-}
-
-public class GameThread : Thread
-{
-    private readonly ISurfaceHolder _holder;
-    private readonly GameView _view;
-    public bool Running { get; set; }
-
-    public GameThread(ISurfaceHolder holder, GameView view)
-    {
-        _holder = holder;
-        _view = view;
-    }
-
-    public override void Run()
-    {
-        long lastTime = SystemClock.ElapsedRealtime();
-
-        while (Running)
-        {
-            Canvas? canvas = null;
-            long now = SystemClock.ElapsedRealtime();
-            float deltaTime = (now - lastTime) / 1000f;
-            lastTime = now;
-
-            try
-            {
-                canvas = _holder.LockCanvas();
-                if (canvas != null)
-                {
-                    lock (_holder)
-                    {
-                        _view.Update(deltaTime);
-                        _view.OnDraw(canvas);
-                    }
-                }
-            }
-            finally
-            {
-                if (canvas != null)
-                {
-                    _holder.UnlockCanvasAndPost(canvas);
-                }
-            }
-        }
     }
 }
