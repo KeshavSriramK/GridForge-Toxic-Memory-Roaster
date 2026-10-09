@@ -43,4 +43,4 @@ jobs:
         run: dotnet restore src/GridForge.Android/GridForge.Android.csproj /p:TargetFramework=net8.0-android
 
       - name: Build Android App
-        run: dotnet build src/GridForge.Android/GridForge.Android.csproj -c Release /p:TargetFramework=net8.0-android
+        run: dotnet build src/GridForge.Android/GridForge.Android.csproj -c Release -f net8.0-android
