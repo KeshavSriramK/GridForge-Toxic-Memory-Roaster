@@ -1,0 +1,4 @@
+D:\Projects\GridForgeEngine\src\GridForge.Android\bin\Release\net8.0-android\publish\com.companyname.GridForge.Android-Signed.aab
+D:\Projects\GridForgeEngine\src\GridForge.Android\bin\Release\net8.0-android\publish\com.companyname.GridForge.Android.aab
+D:\Projects\GridForgeEngine\src\GridForge.Android\bin\Release\net8.0-android\publish\com.companyname.GridForge.Android-Signed.apk
+D:\Projects\GridForgeEngine\src\GridForge.Android\bin\Release\net8.0-android\publish\_Microsoft.Android.Resource.Designer.dll

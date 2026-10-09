@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "dgSpecHash": "5IV7rQG//q8=",
+  "success": true,
+  "projectFilePath": "D:\\Projects\\GridForgeEngine\\src\\GridForge.Android\\GridForge.Android.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\kesha\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.31\\microsoft.net.illink.tasks.8.0.31.nupkg.sha512",
+    "C:\\Users\\kesha\\.nuget\\packages\\raylib-cs\\6.1.1\\raylib-cs.6.1.1.nupkg.sha512",
+    "C:\\Users\\kesha\\.nuget\\packages\\system.numerics.vectors\\4.5.0\\system.numerics.vectors.4.5.0.nupkg.sha512",
+    "C:\\Users\\kesha\\.nuget\\packages\\microsoft.android.ref.34\\34.0.154\\microsoft.android.ref.34.34.0.154.nupkg.sha512",
+    "C:\\Users\\kesha\\.nuget\\packages\\microsoft.android.runtime.34.android-arm\\34.0.154\\microsoft.android.runtime.34.android-arm.34.0.154.nupkg.sha512",
+    "C:\\Users\\kesha\\.nuget\\packages\\microsoft.android.runtime.34.android-arm64\\34.0.154\\microsoft.android.runtime.34.android-arm64.34.0.154.nupkg.sha512",
+    "C:\\Users\\kesha\\.nuget\\packages\\microsoft.android.runtime.34.android-x86\\34.0.154\\microsoft.android.runtime.34.android-x86.34.0.154.nupkg.sha512",
+    "C:\\Users\\kesha\\.nuget\\packages\\microsoft.android.runtime.34.android-x64\\34.0.154\\microsoft.android.runtime.34.android-x64.34.0.154.nupkg.sha512"
+  ],
+  "logs": []
+}

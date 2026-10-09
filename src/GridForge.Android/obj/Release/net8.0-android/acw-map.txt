@@ -1,0 +1,3 @@
+GridForge.Android.MainActivity, GridForge.Android;crc64b79b9ba72943b64e.MainActivity
+GridForge.Android.MainActivity;crc64b79b9ba72943b64e.MainActivity
+gridforge.android.MainActivity;crc64b79b9ba72943b64e.MainActivity

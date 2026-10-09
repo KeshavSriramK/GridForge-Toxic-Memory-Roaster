@@ -3,6 +3,7 @@ using Android.Content.PM;
 using Android.OS;
 using Android.Widget;
 using Android.Graphics;
+using Android.Views;
 
 namespace GridForge.Android;
 
@@ -19,9 +20,9 @@ public class MainActivity : Activity
 
         var layout = new LinearLayout(this)
         {
-            Orientation = Orientation.Vertical,
-            Gravity = Android.Views.GravityFlags.Center
+            Orientation = Orientation.Vertical
         };
+        layout.SetGravity(GravityFlags.Center);
         layout.SetBackgroundColor(Color.ParseColor("#0D1117"));
 
         var coverView = new ImageView(this);
@@ -33,7 +34,7 @@ public class MainActivity : Activity
         {
             Text = "⚡ GridForge Engine Loaded!",
             TextSize = 20,
-            Gravity = Android.Views.GravityFlags.Center
+            Gravity = GravityFlags.Center
         };
         titleText.SetTextColor(Color.ParseColor("#58A6FF"));
         titleText.SetPadding(0, 32, 0, 0);
