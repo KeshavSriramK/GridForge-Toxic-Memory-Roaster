@@ -15,6 +15,7 @@ public class MonoGameApp : Game
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch = null!;
     private Texture2D _pixel = null!;
+    private readonly MainActivity _activity;
 
     private const int TargetWidth = 800;
     private const int TargetHeight = 700;
@@ -57,7 +58,6 @@ public class MonoGameApp : Game
 
     private readonly Random _random = new();
 
-    // Animated Background Particles
     private struct BgParticle
     {
         public Vector2 Position;
@@ -67,7 +67,6 @@ public class MonoGameApp : Game
     }
     private readonly List<BgParticle> _particles = new();
 
-    // Virtual UI Rectangles
     private readonly Rectangle _nameConfirmBtn = new(200, 480, 400, 60);
     private readonly Rectangle _btnEasy = new(100, 200, 600, 65);
     private readonly Rectangle _btnNormal = new(100, 300, 600, 65);
@@ -84,7 +83,6 @@ public class MonoGameApp : Game
     private readonly Rectangle _nextGameButton = new(150, 460, 500, 60);
     private readonly Rectangle _victoryMenuButton = new(150, 540, 500, 60);
 
-    // Font Glyph Mapping
     private static readonly Dictionary<char, byte[]> FontData = new()
     {
         { 'A', new byte[] { 0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11 } },
@@ -135,8 +133,9 @@ public class MonoGameApp : Game
         { '\'', new byte[] { 0x0C, 0x04, 0x08, 0x00, 0x00, 0x00, 0x00 } }
     };
 
-    public MonoGameApp()
+    public MonoGameApp(MainActivity activity)
     {
+        _activity = activity;
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
@@ -154,7 +153,6 @@ public class MonoGameApp : Game
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
 
-        // Background Particles
         for (int i = 0; i < 60; i++)
         {
             _particles.Add(new BgParticle
@@ -337,7 +335,11 @@ public class MonoGameApp : Game
             {
                 if (_currentState == GameState.NameInput && _nameConfirmBtn.Contains(posPoint))
                 {
-                    _currentState = GameState.MainMenu;
+                    _activity.PromptForPlayerName(enteredName =>
+                    {
+                        _userName = enteredName;
+                        _currentState = GameState.MainMenu;
+                    });
                 }
                 else if (_currentState == GameState.MainMenu)
                 {
@@ -375,7 +377,13 @@ public class MonoGameApp : Game
                         _peekTimer = 2.0f;
                         _timeRemaining = Math.Max(1f, _timeRemaining - 5f);
                     }
-                    else if (_menuButton.Contains(posPoint)) _currentState = GameState.MainMenu;
+                    else if (_menuButton.Contains(posPoint))
+                    {
+                        _activity.ShowSurrenderDialog(() =>
+                        {
+                            _currentState = GameState.MainMenu;
+                        });
+                    }
                 }
                 else if ((_currentState == GameState.Victory || _currentState == GameState.GameOver) && _nextGameButton.Contains(posPoint))
                 {
@@ -418,7 +426,6 @@ public class MonoGameApp : Game
         Matrix transform = Matrix.CreateScale(_scale) * Matrix.CreateTranslation(_screenOffset.X, _screenOffset.Y, 0);
         _spriteBatch.Begin(transformMatrix: transform);
 
-        // Virtual Screen Outer Frame
         _spriteBatch.Draw(_pixel, new Rectangle(0, 0, TargetWidth, TargetHeight), new Color(15, 23, 42));
         DrawHollowRect(new Rectangle(10, 10, TargetWidth - 20, TargetHeight - 20), 3, new Color(56, 189, 248));
 
@@ -481,7 +488,6 @@ public class MonoGameApp : Game
                 DrawHollowRect(new Rectangle(GridOffsetX, 48, 500, 16), 2, Color.White);
             }
 
-            // Grid Rendering
             for (int x = 0; x < GridSize; x++)
             {
                 for (int y = 0; y < GridSize; y++)
@@ -500,11 +506,9 @@ public class MonoGameApp : Game
                 }
             }
 
-            // Start & End Nodes
             _spriteBatch.Draw(_pixel, new Rectangle(GridOffsetX + 2 * CellSize, GridOffsetY + 10 * CellSize, CellSize - 2, CellSize - 2), Color.LimeGreen);
             _spriteBatch.Draw(_pixel, new Rectangle(GridOffsetX + 18 * CellSize, GridOffsetY + 10 * CellSize, CellSize - 2, CellSize - 2), Color.Red);
 
-            // Action Buttons
             if (_currentState == GameState.Memorizing)
             {
                 DrawButton(_startPlayingButton, Color.DarkGreen, "START DRAWING (HIDE SOLUTION)");

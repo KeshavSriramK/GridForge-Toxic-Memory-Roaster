@@ -3,6 +3,7 @@ using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Views;
+using Android.Widget;
 using Microsoft.Xna.Framework;
 
 namespace GridForge.Android;
@@ -24,10 +25,51 @@ public class MainActivity : AndroidGameActivity
     {
         base.OnCreate(savedInstanceState);
 
-        _game = new MonoGameApp();
+        _game = new MonoGameApp(this);
         var mainView = (View)_game.Services.GetService(typeof(View))!;
         SetContentView(mainView);
         _game.Run();
+    }
+
+    public void PromptForPlayerName(Action<string> onNameEntered)
+    {
+        RunOnUiThread(() =>
+        {
+            var input = new EditText(this)
+            {
+                Hint = "Enter your name..."
+            };
+
+            new AlertDialog.Builder(this)
+                .SetTitle("WHO IS DARING TO SUFFER?")
+                .SetMessage("Type your name so we know whose ego is about to be crushed:")
+                .SetView(input)
+                .SetPositiveButton("Register Failure", (sender, args) =>
+                {
+                    string name = input.Text?.Trim() ?? "";
+                    if (string.IsNullOrEmpty(name)) name = "KESHAV";
+                    onNameEntered(name);
+                })
+                .SetCancelable(false)
+                .Show();
+        });
+    }
+
+    public void ShowSurrenderDialog(Action onConfirmed)
+    {
+        RunOnUiThread(() =>
+        {
+            new AlertDialog.Builder(this)
+                .SetTitle("QUITTING ALREADY?")
+                .SetMessage("Are you sure you want to run away to the main menu like a coward?")
+                .SetPositiveButton("Flee in Shame", (sender, args) =>
+                {
+                    onConfirmed();
+                })
+                .SetNegativeButton("Stay & Suffer More", (sender, args) => { })
+                .SetCancelable(true)
+                .Show();
+        });
     }
 
     public override bool OnKeyDown(Keycode keyCode, KeyEvent? e)
