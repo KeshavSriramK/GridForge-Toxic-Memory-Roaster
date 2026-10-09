@@ -1,10 +1,10 @@
 using System;
-using Android.App;
-using Android.Content;
-using Android.Content.PM;
-using Android.OS;
-using Android.Views;
-using Android.Widget;
+using global::Android.App;
+using global::Android.Content;
+using global::Android.Content.PM;
+using global::Android.OS;
+using global::Android.Views;
+using global::Android.Widget;
 using Microsoft.Xna.Framework;
 
 namespace GridForge.Android;
@@ -38,7 +38,7 @@ public class MainActivity : AndroidGameActivity
         {
             var layout = new LinearLayout(this)
             {
-                Orientation = Android.Widget.LinearLayout.Orientation.Vertical
+                Orientation = global::Android.Widget.LinearLayout.Orientation.Vertical
             };
             layout.SetPadding(60, 50, 60, 50);
 
